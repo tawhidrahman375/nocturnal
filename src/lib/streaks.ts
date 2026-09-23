@@ -11,7 +11,7 @@ export function localDateString(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-function daysBetween(a: string, b: string) {
+export function daysBetween(a: string, b: string) {
   return Math.round((Date.parse(b) - Date.parse(a)) / MS_PER_DAY);
 }
 

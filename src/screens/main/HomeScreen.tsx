@@ -1,5 +1,6 @@
 import { Flame, Moon, PenLine } from 'lucide-react-native';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { BeginnerTrackCard } from '../../components/BeginnerTrackCard';
 import { Card } from '../../components/Card';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { WbtbCard } from '../../components/WbtbCard';
@@ -25,6 +26,8 @@ export function HomeScreen() {
         </View>
 
         <WbtbCard />
+
+        <BeginnerTrackCard />
 
         <View style={styles.statsRow}>
           <Card style={styles.statCard}>

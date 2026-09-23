@@ -24,6 +24,7 @@ export type AppStackParamList = {
   WbtbSetup: { plan?: WbtbPlan } | undefined;
   WbtbSession: { sessionId: string };
   RealityCheckSetup: undefined;
+  BeginnerTrack: undefined;
 };
 
 declare global {
