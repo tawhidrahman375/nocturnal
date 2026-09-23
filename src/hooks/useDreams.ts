@@ -1,11 +1,12 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
+import { refreshRealityCheckSchedule } from '../lib/realityChecks';
 import { supabase } from '../lib/supabase';
 import { Tables, TablesInsert } from '../types/database';
 import { useAuth } from './useAuth';
 
 export type Dream = Tables<'dreams'>;
-type NewDream = Pick<TablesInsert<'dreams'>, 'title' | 'content' | 'is_lucid'>;
+type NewDream = Pick<TablesInsert<'dreams'>, 'title' | 'content' | 'is_lucid' | 'tags'>;
 
 export function useDreams() {
   const { user } = useAuth();
@@ -55,6 +56,8 @@ export function useDreams() {
       .insert({ ...dream, user_id: user.id });
     if (insertError) return { error: insertError.message };
     await refresh();
+    // New tags may have introduced fresh dream signs; keep reminder copy up to date.
+    refreshRealityCheckSchedule(user.id).catch(() => {});
     return { error: null };
   };
 

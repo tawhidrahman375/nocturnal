@@ -8,11 +8,16 @@ const ALARM_CHANNEL_ID = 'wbtb-alarm';
 // A single notification is easy to sleep through, so the alarm repeats until the session starts.
 const ALARM_REPEAT_OFFSETS_MINUTES = [0, 3, 6];
 
+const REALITY_CHECK_CHANNEL_ID = 'reality-check';
+// Caps how many daily-recurring reminders we keep scheduled at once (and how many identifiers we cancel).
+export const MAX_REALITY_CHECK_SLOTS = 16;
+
 type WbtbNotificationType = 'wbtb-alarm' | 'wbtb-window-end';
 
 const alarmIds = (sessionId: string) =>
   ALARM_REPEAT_OFFSETS_MINUTES.map((_, i) => `wbtb-alarm-${sessionId}-${i}`);
 const windowEndId = (sessionId: string) => `wbtb-window-end-${sessionId}`;
+const realityCheckId = (index: number) => `reality-check-${index}`;
 
 export function configureNotifications() {
   if (!notificationsSupported) return;
@@ -43,6 +48,27 @@ export async function requestAlarmPermission() {
       bypassDnd: true,
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
       audioAttributes: { usage: Notifications.AndroidAudioUsage.ALARM },
+    });
+  }
+
+  const current = await Notifications.getPermissionsAsync();
+  if (current.granted) return true;
+  if (!current.canAskAgain) return false;
+
+  const next = await Notifications.requestPermissionsAsync({
+    ios: { allowAlert: true, allowSound: true, allowBadge: false },
+  });
+  return next.granted;
+}
+
+export async function requestRealityCheckPermission() {
+  if (!notificationsSupported) return true;
+
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync(REALITY_CHECK_CHANNEL_ID, {
+      name: 'Reality check reminders',
+      importance: Notifications.AndroidImportance.DEFAULT,
+      sound: 'default',
     });
   }
 
@@ -129,4 +155,52 @@ export function parseWbtbNotification(notification: Notifications.Notification) 
   const data = notification.request.content.data;
   if (data?.type !== 'wbtb-alarm' && data?.type !== 'wbtb-window-end') return null;
   return { sessionId: String(data.sessionId), type: data.type as WbtbNotificationType };
+}
+
+export type RealityCheckSlot = {
+  index: number;
+  hour: number;
+  minute: number;
+  title: string;
+  body: string;
+  dreamSign: string | null;
+};
+
+export async function scheduleRealityChecks(slots: RealityCheckSlot[]) {
+  if (!notificationsSupported) return;
+  await cancelRealityChecks();
+  await Promise.all(
+    slots.map((slot) =>
+      Notifications.scheduleNotificationAsync({
+        identifier: realityCheckId(slot.index),
+        content: {
+          title: slot.title,
+          body: slot.body,
+          sound: 'default',
+          data: { type: 'reality-check', slotIndex: slot.index, dreamSign: slot.dreamSign },
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour: slot.hour,
+          minute: slot.minute,
+          channelId: REALITY_CHECK_CHANNEL_ID,
+        },
+      })
+    )
+  );
+}
+
+export async function cancelRealityChecks() {
+  if (!notificationsSupported) return;
+  const ids = Array.from({ length: MAX_REALITY_CHECK_SLOTS }, (_, i) => realityCheckId(i));
+  await cancelAndDismiss(ids);
+}
+
+export function parseRealityCheckNotification(notification: Notifications.Notification) {
+  const data = notification.request.content.data;
+  if (data?.type !== 'reality-check') return null;
+  return {
+    slotIndex: Number(data.slotIndex),
+    dreamSign: typeof data.dreamSign === 'string' ? data.dreamSign : null,
+  };
 }

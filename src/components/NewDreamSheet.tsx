@@ -8,24 +8,40 @@ import { colors, radius, spacing, typography } from '../theme';
 type NewDreamSheetProps = {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (dream: { title: string; content: string; is_lucid: boolean }) => Promise<void>;
+  onSubmit: (dream: {
+    title: string;
+    content: string;
+    is_lucid: boolean;
+    tags: string[];
+  }) => Promise<void>;
 };
+
+function parseTags(input: string) {
+  return [...new Set(input.split(',').map((tag) => tag.trim()).filter(Boolean))];
+}
 
 export function NewDreamSheet({ visible, onClose, onSubmit }: NewDreamSheetProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [tagsInput, setTagsInput] = useState('');
   const [isLucid, setIsLucid] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const reset = () => {
     setTitle('');
     setContent('');
+    setTagsInput('');
     setIsLucid(false);
   };
 
   const handleSave = async () => {
     setSaving(true);
-    await onSubmit({ title: title.trim() || 'Untitled dream', content: content.trim(), is_lucid: isLucid });
+    await onSubmit({
+      title: title.trim() || 'Untitled dream',
+      content: content.trim(),
+      is_lucid: isLucid,
+      tags: parseTags(tagsInput),
+    });
     setSaving(false);
     reset();
     onClose();
@@ -52,6 +68,12 @@ export function NewDreamSheet({ visible, onClose, onSubmit }: NewDreamSheetProps
               multiline
               numberOfLines={5}
               style={styles.textArea}
+            />
+            <TextField
+              label="Dream signs"
+              value={tagsInput}
+              onChangeText={setTagsInput}
+              placeholder="flying, teeth falling out, being chased"
             />
             <Pressable
               style={[styles.lucidToggle, isLucid && styles.lucidToggleActive]}

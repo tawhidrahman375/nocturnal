@@ -23,6 +23,7 @@ export type AppStackParamList = {
   Tabs: NavigatorScreenParams<MainTabParamList>;
   WbtbSetup: { plan?: WbtbPlan } | undefined;
   WbtbSession: { sessionId: string };
+  RealityCheckSetup: undefined;
 };
 
 declare global {

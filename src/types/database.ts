@@ -83,6 +83,63 @@ export type Database = {
         }
         Relationships: []
       }
+      reality_check_logs: {
+        Row: {
+          created_at: string
+          dream_sign: string | null
+          id: string
+          scheduled_for: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dream_sign?: string | null
+          id?: string
+          scheduled_for?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dream_sign?: string | null
+          id?: string
+          scheduled_for?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reality_check_settings: {
+        Row: {
+          active_end_minutes: number
+          active_start_minutes: number
+          created_at: string
+          enabled: boolean
+          frequency_minutes: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_end_minutes?: number
+          active_start_minutes?: number
+          created_at?: string
+          enabled?: boolean
+          frequency_minutes?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_end_minutes?: number
+          active_start_minutes?: number
+          created_at?: string
+          enabled?: boolean
+          frequency_minutes?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wbtb_sessions: {
         Row: {
           completed_at: string | null

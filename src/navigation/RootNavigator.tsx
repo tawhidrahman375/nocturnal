@@ -4,6 +4,7 @@ import { AppNavigator } from './AppNavigator';
 import { AuthNavigator } from './AuthNavigator';
 import { navigationRef } from './navigationRef';
 import { useAuth } from '../hooks/useAuth';
+import { useRealityCheckNotificationRouting } from '../hooks/useRealityCheckNotificationRouting';
 import { useWbtbNotificationRouting } from '../hooks/useWbtbNotificationRouting';
 import { colors } from '../theme';
 
@@ -24,6 +25,7 @@ export function RootNavigator() {
   const [isNavReady, setIsNavReady] = useState(false);
 
   useWbtbNotificationRouting(!!session && isNavReady);
+  useRealityCheckNotificationRouting(!!session);
 
   return (
     <NavigationContainer ref={navigationRef} theme={navigationTheme} onReady={() => setIsNavReady(true)}>
