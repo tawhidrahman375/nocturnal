@@ -1,51 +1,67 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
+import { LucideIcon } from 'lucide-react-native';
+import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text, ViewStyle } from 'react-native';
 import { colors, radius, typography } from '../theme';
 
-type ButtonVariant = 'primary' | 'secondary';
+type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+type ButtonSize = 'md' | 'sm';
 
 type ButtonProps = {
   label: string;
   onPress: () => void;
   variant?: ButtonVariant;
+  size?: ButtonSize;
+  icon?: LucideIcon;
   disabled?: boolean;
   loading?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
+};
+
+const LABEL_COLOR: Record<ButtonVariant, string> = {
+  primary: colors.text.onAccent,
+  secondary: colors.accent.primary,
+  ghost: colors.text.secondary,
 };
 
 export function Button({
   label,
   onPress,
   variant = 'primary',
+  size = 'md',
+  icon: Icon,
   disabled,
   loading,
   style,
 }: ButtonProps) {
-  const isSecondary = variant === 'secondary';
   const isDisabled = disabled || loading;
+  // A dimmed accent fill reads as muddy on navy, so disabled buttons drop to a neutral surface.
+  const labelColor = disabled ? colors.text.tertiary : LABEL_COLOR[variant];
 
   return (
     <Pressable
       onPress={onPress}
       disabled={isDisabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!isDisabled, busy: !!loading }}
       style={({ pressed }) => [
         styles.base,
-        isSecondary ? styles.secondary : styles.primary,
-        isDisabled && styles.disabled,
+        size === 'sm' ? styles.sm : styles.md,
+        styles[variant],
+        disabled && (variant === 'primary' ? styles.primaryDisabled : styles.outlineDisabled),
         pressed && !isDisabled && styles.pressed,
         style,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={isSecondary ? colors.accent.primary : '#FFFFFF'} />
+        <ActivityIndicator color={labelColor} />
       ) : (
-        <Text
-          style={[
-            typography.bodyMedium,
-            isSecondary ? styles.secondaryLabel : styles.primaryLabel,
-          ]}
-        >
-          {label}
-        </Text>
+        <>
+          {Icon ? <Icon color={labelColor} size={size === 'sm' ? 16 : 20} strokeWidth={1.75} /> : null}
+          <Text
+            style={[size === 'sm' ? typography.label : typography.bodyMedium, { color: labelColor }]}
+          >
+            {label}
+          </Text>
+        </>
       )}
     </Pressable>
   );
@@ -53,30 +69,43 @@ export function Button({
 
 const styles = StyleSheet.create({
   base: {
-    height: 52,
-    borderRadius: radius.button,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
+    borderRadius: radius.button,
+  },
+  md: {
+    height: 52,
     paddingHorizontal: 24,
+  },
+  sm: {
+    height: 36,
+    paddingHorizontal: 14,
+    borderRadius: radius.pill,
   },
   primary: {
     backgroundColor: colors.accent.primary,
   },
   secondary: {
-    backgroundColor: 'transparent',
+    backgroundColor: colors.accent.primaryMuted,
     borderWidth: 1,
-    borderColor: colors.accent.primary,
+    borderColor: colors.accent.primaryBorder,
   },
-  primaryLabel: {
-    color: '#FFFFFF',
+  ghost: {
+    backgroundColor: 'transparent',
   },
-  secondaryLabel: {
-    color: colors.accent.primary,
+  primaryDisabled: {
+    backgroundColor: colors.surface.card,
+    borderWidth: 1,
+    borderColor: colors.border.default,
   },
-  disabled: {
-    opacity: 0.5,
+  outlineDisabled: {
+    backgroundColor: 'transparent',
+    borderColor: colors.border.default,
   },
   pressed: {
-    opacity: 0.85,
+    opacity: 0.88,
+    transform: [{ scale: 0.98 }],
   },
 });

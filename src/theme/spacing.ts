@@ -10,10 +10,13 @@ export const spacing = {
   xxl: unit * 6, // 48
   screenPadding: 20,
   cardPadding: 16,
+  // Scrollable tab screens pad their bottom by this so content clears the floating tab bar.
+  tabBarClearance: 120,
 } as const;
 
 export const radius = {
   card: 12,
-  button: 8,
-  pill: 24,
+  button: 12,
+  sheet: 24,
+  pill: 999,
 } as const;
