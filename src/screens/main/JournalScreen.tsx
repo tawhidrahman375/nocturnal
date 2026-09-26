@@ -3,11 +3,13 @@ import { useMemo, useState } from 'react';
 import { Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
+import { DreamSignRevealOverlay } from '../../components/DreamSignRevealOverlay';
 import { MilestoneOverlay } from '../../components/MilestoneOverlay';
 import { NewDreamSheet } from '../../components/NewDreamSheet';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { useAuth } from '../../hooks/useAuth';
 import { Dream, useDreams } from '../../hooks/useDreams';
+import { useDreamSignReveal } from '../../hooks/useDreamSignReveal';
 import { useMilestoneCheck } from '../../hooks/useMilestoneCheck';
 import { colors, radius, spacing, typography } from '../../theme';
 
@@ -47,6 +49,7 @@ export function JournalScreen() {
   const sections = useMemo(() => groupDreamsByDate(dreams), [dreams]);
   const openSheet = () => setSheetVisible(true);
   const { milestone, checkLucidDreamMilestone, dismissMilestone } = useMilestoneCheck();
+  const { currentSign, checkForNewSigns, dismissCurrentSign } = useDreamSignReveal();
 
   return (
     <ScreenContainer edges={['top']}>
@@ -79,10 +82,12 @@ export function JournalScreen() {
         onSubmit={async (dream) => {
           await addDream(dream);
           if (dream.is_lucid && user) checkLucidDreamMilestone(user.id);
+          if (user) checkForNewSigns(user.id);
         }}
       />
 
       <MilestoneOverlay milestone={milestone} visible={milestone !== null} onDismiss={dismissMilestone} />
+      <DreamSignRevealOverlay sign={currentSign} visible={currentSign !== null} onDismiss={dismissCurrentSign} />
     </ScreenContainer>
   );
 }
