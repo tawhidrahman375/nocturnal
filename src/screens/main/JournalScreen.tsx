@@ -1,6 +1,7 @@
 import { Moon, Plus, Sparkles } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
+import { Arrive } from '../../components/Arrive';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { DreamSignRevealOverlay } from '../../components/DreamSignRevealOverlay';
@@ -65,27 +66,29 @@ export function JournalScreen() {
 
   return (
     <ScreenContainer edges={['top']}>
-      <View style={styles.header}>
+      <Arrive style={styles.header}>
         <Text style={[typography.heroTitle, styles.title]}>Journal</Text>
         <Pressable style={styles.addButton} onPress={openSheet} hitSlop={8}>
           <Plus color="#FFFFFF" size={22} strokeWidth={2} />
         </Pressable>
-      </View>
+      </Arrive>
 
       {dreams.length === 0 ? (
         <JournalEmptyState onRecord={openSheet} />
       ) : (
-        <SectionList
-          sections={sections}
-          keyExtractor={(item) => item.id}
-          stickySectionHeadersEnabled={false}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-          renderSectionHeader={({ section }) => (
-            <Text style={[typography.label, styles.sectionHeader]}>{section.title}</Text>
-          )}
-          renderItem={({ item }) => <DreamRow dream={item} />}
-        />
+        <Arrive delay={40} style={styles.listWrap}>
+          <SectionList
+            sections={sections}
+            keyExtractor={(item) => item.id}
+            stickySectionHeadersEnabled={false}
+            contentContainerStyle={styles.list}
+            showsVerticalScrollIndicator={false}
+            renderSectionHeader={({ section }) => (
+              <Text style={[typography.label, styles.sectionHeader]}>{section.title}</Text>
+            )}
+            renderItem={({ item }) => <DreamRow dream={item} />}
+          />
+        </Arrive>
       )}
 
       <NewDreamSheet
@@ -174,6 +177,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent.primary,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  listWrap: {
+    flex: 1,
   },
   list: {
     gap: spacing.sm,

@@ -3,6 +3,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Flame, LucideIcon, Moon, PenLine, Sparkles } from 'lucide-react-native';
 import { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Arrive } from '../../components/Arrive';
 import { BeginnerTrackCard } from '../../components/BeginnerTrackCard';
 import { Card } from '../../components/Card';
 import { MilestoneOverlay } from '../../components/MilestoneOverlay';
@@ -45,16 +46,20 @@ export function HomeScreen() {
   return (
     <ScreenContainer edges={['top']}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
+        <Arrive style={styles.header}>
           <Text style={[typography.label, styles.eyebrow]}>Welcome back</Text>
           <Text style={[typography.heroTitle, styles.name]}>{greetingName}</Text>
-        </View>
+        </Arrive>
 
-        <WbtbCard />
+        <Arrive delay={40}>
+          <WbtbCard />
+        </Arrive>
 
-        <BeginnerTrackCard />
+        <Arrive delay={80}>
+          <BeginnerTrackCard />
+        </Arrive>
 
-        <View style={styles.statsRow}>
+        <Arrive delay={120} style={styles.statsRow}>
           <BareStat
             icon={Flame}
             value={profile?.current_streak ?? 0}
@@ -63,11 +68,13 @@ export function HomeScreen() {
           />
           <BareStat icon={Moon} value={dreams.length} label="Dreams logged" tint={colors.accent.primary} />
           <BareStat icon={Sparkles} value={lucidDreams} label="Lucid" tint={colors.accent.secondary} />
-        </View>
+        </Arrive>
 
-        <TonightRoutineCard dreams={dreams} mildIntentionSetAt={profile?.mild_intention_set_at ?? null} />
+        <Arrive delay={160}>
+          <TonightRoutineCard dreams={dreams} mildIntentionSetAt={profile?.mild_intention_set_at ?? null} />
+        </Arrive>
 
-        <View style={styles.section}>
+        <Arrive delay={200} style={styles.section}>
           <Text style={[typography.heading, styles.sectionTitle]}>Recent dreams</Text>
           {recentDreams.length === 0 ? (
             <Card>
@@ -95,7 +102,7 @@ export function HomeScreen() {
               </Card>
             ))
           )}
-        </View>
+        </Arrive>
       </ScrollView>
 
       <MilestoneOverlay milestone={milestone} visible={milestone !== null} onDismiss={handleMilestoneDismiss} />

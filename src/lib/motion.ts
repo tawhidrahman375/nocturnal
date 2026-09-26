@@ -1,6 +1,6 @@
 import { Easing } from 'react-native';
 
-// The seven motion tokens from DESIGN.md section 10. Every animated interaction in the
+// The eight motion tokens from DESIGN.md section 10. Every animated interaction in the
 // app should map to one of these — don't hand-roll a new duration/curve elsewhere.
 
 export const EASE_OUT = Easing.out(Easing.cubic);
