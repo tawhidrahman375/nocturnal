@@ -13,7 +13,9 @@ import { TimeStepper } from '../../components/TimeStepper';
 import { useAuth } from '../../hooks/useAuth';
 import { useNow } from '../../hooks/useNow';
 import { usePrePermissionGate } from '../../hooks/usePrePermissionGate';
+import { useProfile } from '../../hooks/useProfile';
 import { notificationsSupported, requestAlarmPermission } from '../../lib/notifications';
+import { timeOfDayFromMinutes } from '../../lib/realityChecks';
 import {
   addMinutes,
   calculateWakeTime,
@@ -33,6 +35,8 @@ import { planSession } from '../../lib/wbtbSessions';
 import { AppStackParamList } from '../../navigation/types';
 import { colors, spacing, typography } from '../../theme';
 
+const MINUTES_PER_DAY = 24 * 60;
+
 type Props = NativeStackScreenProps<AppStackParamList, 'WbtbSetup'>;
 
 type SleepMinutes = (typeof SLEEP_DURATION_OPTIONS)[number];
@@ -41,6 +45,7 @@ type WakeWindowMinutes = (typeof WAKE_WINDOW_OPTIONS)[number];
 export function WbtbSetupScreen({ navigation, route }: Props) {
   const plan = route.params?.plan;
   const { user } = useAuth();
+  const { profile } = useProfile();
   const now = useNow(30_000);
   const [sleepAt, setSleepAt] = useState(() =>
     plan ? new Date(plan.sleepAt) : defaultSleepTime(new Date())
@@ -56,6 +61,22 @@ export function WbtbSetupScreen({ navigation, route }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [permissionBlocked, setPermissionBlocked] = useState(false);
   const alarmPermission = usePrePermissionGate('wbtb-alarm', requestAlarmPermission);
+  const [hasAppliedNaturalWakeTime, setHasAppliedNaturalWakeTime] = useState(false);
+
+  // Defaults the bedtime picker so the alarm lands on the user's own natural wake
+  // time (from onboarding) instead of the generic "round up from now" default —
+  // but only on first open of a fresh plan, and only once, so a later profile
+  // refetch (useProfile reconciles on every focus) can't clobber a manual edit.
+  // Adjusted during render (React's documented escape hatch, already used the same
+  // way in RealityCheckSetupScreen) rather than in an effect, so the default lands
+  // before the first paint instead of after it.
+  if (!plan && !hasAppliedNaturalWakeTime && profile?.natural_wake_time != null) {
+    setHasAppliedNaturalWakeTime(true);
+    const bedtimeMinutes =
+      ((profile.natural_wake_time - RECOMMENDED_SLEEP_MINUTES) % MINUTES_PER_DAY + MINUTES_PER_DAY) %
+      MINUTES_PER_DAY;
+    setSleepAt(timeOfDayFromMinutes(bedtimeMinutes, new Date()));
+  }
 
   const wakeAt = calculateWakeTime(sleepAt, sleepMinutes);
   const backToSleepAt = addMinutes(wakeAt, wakeWindowMinutes);
