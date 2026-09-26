@@ -2,16 +2,16 @@ import { useNavigation } from '@react-navigation/native';
 import { GraduationCap } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button } from './Button';
-import { Card } from './Card';
 import { LoadingView } from './LoadingView';
+import { ProgressBar } from './ProgressBar';
 import { useBeginnerTrack } from '../hooks/useBeginnerTrack';
 import { getTrackDay, TRACK_LENGTH } from '../lib/beginnerTrack';
-import { colors, radius, spacing, typography } from '../theme';
+import { colors, spacing, typography } from '../theme';
 
 function Eyebrow({ label }: { label: string }) {
   return (
     <View style={styles.eyebrowRow}>
-      <GraduationCap color={colors.accent.primary} size={18} strokeWidth={1.5} />
+      <GraduationCap color={colors.accent.secondary} size={16} strokeWidth={1.75} />
       <Text style={[typography.label, styles.eyebrow]}>{label}</Text>
     </View>
   );
@@ -23,9 +23,9 @@ export function BeginnerTrackCard() {
 
   if (isLoading) {
     return (
-      <Card style={styles.loadingCard}>
+      <View style={styles.loadingCard}>
         <LoadingView label="Checking your progress" />
-      </Card>
+      </View>
     );
   }
 
@@ -33,26 +33,26 @@ export function BeginnerTrackCard() {
 
   if (!startedAt) {
     return (
-      <Card style={styles.card}>
+      <View style={styles.card}>
         <Eyebrow label="30-Day Track" />
         <View style={styles.copy}>
           <Text style={[typography.heading, styles.title]}>30 days to your first lucid dream</Text>
-          <Text style={[typography.body, styles.body]}>
-            A guided daily program — reality checks, journaling, Wake Back to Bed, then MILD.
-          </Text>
+          <Text style={[typography.body, styles.body]}>One new habit each night.</Text>
         </View>
         <Button label="Start the track" onPress={open} />
-      </Card>
+        <View style={styles.bottomBar} />
+      </View>
     );
   }
 
   if (completedDays.size >= TRACK_LENGTH) {
     return (
-      <Card style={styles.card}>
+      <View style={styles.card}>
         <Eyebrow label="30-Day Track" />
         <Text style={[typography.heading, styles.title]}>You completed the track</Text>
         <Button label="Review" variant="secondary" onPress={open} />
-      </Card>
+        <View style={styles.bottomBar} />
+      </View>
     );
   }
 
@@ -60,33 +60,36 @@ export function BeginnerTrackCard() {
   const progress = completedDays.size / TRACK_LENGTH;
 
   return (
-    <Card style={styles.card}>
+    <View style={styles.card}>
       <Eyebrow label={`Day ${currentDay} of ${TRACK_LENGTH}`} />
       <Text style={[typography.heading, styles.title]}>{task?.title}</Text>
-      <View style={styles.progressTrack}>
-        <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
-      </View>
+      <ProgressBar progress={progress} color={colors.accent.secondary} trackColor={colors.background.primary} />
       <Button label="Continue" onPress={open} />
-    </Card>
+      <View style={styles.bottomBar} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
     gap: spacing.md,
+    padding: spacing.cardPadding,
   },
   loadingCard: {
     height: 164,
+    padding: spacing.cardPadding,
   },
   eyebrowRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    opacity: 0.4,
   },
   eyebrow: {
     color: colors.text.tertiary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontSize: 10,
+    letterSpacing: 1.5,
   },
   copy: {
     gap: spacing.xs,
@@ -97,15 +100,13 @@ const styles = StyleSheet.create({
   body: {
     color: colors.text.secondary,
   },
-  progressTrack: {
-    height: 6,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surface.card,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: 6,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accent.primary,
+  // Full-bleed signature line at the card's floor — negative margins cancel the card's
+  // own padding so it reaches edge to edge, `overflow: hidden` on the card clips it.
+  bottomBar: {
+    height: 2,
+    backgroundColor: '#2A3A5C',
+    marginTop: spacing.md,
+    marginHorizontal: -spacing.cardPadding,
+    marginBottom: -spacing.cardPadding,
   },
 });

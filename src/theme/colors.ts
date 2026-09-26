@@ -4,7 +4,8 @@ export const colors = {
     secondary: '#111827',
   },
   surface: {
-    card: '#1A2035',
+    // Depth now comes from this being just a shade off the background, not a stroke.
+    card: '#0F1628',
     cardElevated: '#1E2840',
     translucent: 'rgba(26, 32, 53, 0.72)',
   },

@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Breathing } from '../../../components/Breathing';
 import { Button } from '../../../components/Button';
 import { EmptyState } from '../../../components/EmptyState';
-import { MILD_MANTRA, WbtbSession, WbtbStatus } from '../../../lib/wbtb';
+import { TECHNIQUE_CLOSING_LINES, WbtbSession, WbtbStatus, WbtbTechnique } from '../../../lib/wbtb';
 import { colors, spacing, typography } from '../../../theme';
 
 const ENDED_MESSAGES: Partial<Record<WbtbStatus, string>> = {
@@ -39,7 +39,9 @@ export function ClosedStage({ session, onClose }: ClosedStageProps) {
       <View style={styles.center}>
         <Text style={[typography.heading, styles.sleepTitle]}>Sleep well</Text>
         <Breathing minOpacity={0.2} maxOpacity={0.6} durationMs={6000}>
-          <Text style={[typography.subheading, styles.mantra]}>{MILD_MANTRA}</Text>
+          <Text style={[typography.subheading, styles.mantra]}>
+            {TECHNIQUE_CLOSING_LINES[session.technique as WbtbTechnique]}
+          </Text>
         </Breathing>
       </View>
       <Pressable onPress={onClose} hitSlop={12} style={styles.closeLink} accessibilityRole="button">

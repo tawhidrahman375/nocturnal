@@ -1,12 +1,15 @@
 import { TablesUpdate } from '../types/database';
 import { cancelAlarm, cancelWindowEnd, scheduleAlarm } from './notifications';
 import { supabase } from './supabase';
-import { MINUTE_MS, WbtbSession, WbtbStatus } from './wbtb';
+import { MINUTE_MS, WbtbSession, WbtbStatus, WbtbTechnique } from './wbtb';
 
 // Sessions left open this long after the alarm (or after waking) are treated as missed.
 const STALE_AFTER_MINUTES = 180;
 
-export type SessionPatch =Omit<TablesUpdate<'wbtb_sessions'>, 'status'> & { status?: WbtbStatus };
+export type SessionPatch = Omit<TablesUpdate<'wbtb_sessions'>, 'status' | 'technique'> & {
+  status?: WbtbStatus;
+  technique?: WbtbTechnique;
+};
 
 export async function fetchSession(id: string) {
   const { data, error } = await supabase.from('wbtb_sessions').select('*').eq('id', id).single();
@@ -47,6 +50,7 @@ export async function planSession(input: {
   sleepAt: Date;
   wakeAt: Date;
   wakeWindowMinutes: number;
+  technique: WbtbTechnique;
 }) {
   const existing = await fetchOpenSession();
   if (existing) await cancelSession(existing);
@@ -58,6 +62,7 @@ export async function planSession(input: {
       sleep_at: input.sleepAt.toISOString(),
       wake_at: input.wakeAt.toISOString(),
       wake_window_minutes: input.wakeWindowMinutes,
+      technique: input.technique,
     })
     .select()
     .single();

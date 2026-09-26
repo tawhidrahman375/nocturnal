@@ -1,6 +1,8 @@
 import { useNavigation } from '@react-navigation/native';
 import { ChevronRight, Eye, LogOut } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { AnimatedPressable } from '../../components/AnimatedPressable';
+import { Arrive } from '../../components/Arrive';
 import { Card } from '../../components/Card';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { useAuth } from '../../hooks/useAuth';
@@ -14,7 +16,7 @@ function realityCheckSummary(settings: ReturnType<typeof useRealityCheckSettings
   start.setHours(Math.floor(settings.active_start_minutes / 60), settings.active_start_minutes % 60);
   const end = new Date();
   end.setHours(Math.floor(settings.active_end_minutes / 60), settings.active_end_minutes % 60);
-  return `Every ${formatDuration(settings.frequency_minutes)} · ${formatTime(start)}–${formatTime(end)}`;
+  return `Every ${formatDuration(settings.frequency_minutes)} · ${formatTime(start)} to ${formatTime(end)}`;
 }
 
 export function ProfileScreen() {
@@ -24,32 +26,38 @@ export function ProfileScreen() {
 
   return (
     <ScreenContainer edges={['top']}>
-      <View style={styles.header}>
-        <Text style={[typography.displayMd, styles.title]}>You</Text>
-      </View>
+      <Arrive style={styles.header}>
+        <Text style={[typography.heroTitle, styles.title]}>You</Text>
+      </Arrive>
 
-      <Card style={styles.card}>
-        <Text style={[typography.label, styles.label]}>Signed in as</Text>
-        <Text style={[typography.bodyMedium, styles.email]}>{user?.email}</Text>
-      </Card>
-
-      <Pressable onPress={() => navigation.navigate('RealityCheckSetup')}>
-        <Card style={styles.rowCard}>
-          <View style={styles.rowLeft}>
-            <Eye color={colors.accent.primary} size={20} strokeWidth={1.5} />
-            <View>
-              <Text style={[typography.bodyMedium, styles.email]}>Reality checks</Text>
-              <Text style={[typography.label, styles.label]}>{realityCheckSummary(settings)}</Text>
-            </View>
-          </View>
-          <ChevronRight color={colors.text.tertiary} size={20} strokeWidth={1.5} />
+      <Arrive delay={40}>
+        <Card style={styles.card}>
+          <Text style={[typography.label, styles.label]}>Signed in as</Text>
+          <Text style={[typography.bodyMedium, styles.email]}>{user?.email}</Text>
         </Card>
-      </Pressable>
+      </Arrive>
 
-      <Pressable style={styles.signOutRow} onPress={signOut}>
-        <LogOut color="#F87171" size={18} strokeWidth={1.5} />
-        <Text style={[typography.bodyMedium, styles.signOutText]}>Sign out</Text>
-      </Pressable>
+      <Arrive delay={80}>
+        <AnimatedPressable onPress={() => navigation.navigate('RealityCheckSetup')}>
+          <Card style={styles.rowCard}>
+            <View style={styles.rowLeft}>
+              <Eye color={colors.accent.primary} size={20} strokeWidth={1.5} />
+              <View>
+                <Text style={[typography.bodyMedium, styles.email]}>Reality checks</Text>
+                <Text style={[typography.label, styles.label]}>{realityCheckSummary(settings)}</Text>
+              </View>
+            </View>
+            <ChevronRight color={colors.text.tertiary} size={20} strokeWidth={1.5} />
+          </Card>
+        </AnimatedPressable>
+      </Arrive>
+
+      <Arrive delay={120}>
+        <AnimatedPressable style={styles.signOutRow} onPress={signOut}>
+          <LogOut color="#F87171" size={18} strokeWidth={1.5} />
+          <Text style={[typography.bodyMedium, styles.signOutText]}>Sign out</Text>
+        </AnimatedPressable>
+      </Arrive>
     </ScreenContainer>
   );
 }

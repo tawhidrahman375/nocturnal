@@ -1,8 +1,8 @@
 import { PropsWithChildren, useId } from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
 import { SafeAreaView, Edge } from 'react-native-safe-area-context';
-import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
-import { colors, spacing } from '../theme';
+import Svg, { Circle, Defs, Pattern, RadialGradient, Rect, Stop } from 'react-native-svg';
+import { spacing } from '../theme';
 
 type ScreenContainerProps = PropsWithChildren<{
   style?: ViewStyle;
@@ -10,21 +10,40 @@ type ScreenContainerProps = PropsWithChildren<{
   glow?: boolean;
 }>;
 
-const GLOW_HEIGHT = 520;
+// Near-black floor the radial bloom fades into — DESIGN.md section 1's "awake at 3am"
+// atmosphere, not a flat fill, so it's only used as the SVG's outer gradient stop and
+// the root's fallback color, never as a standalone background.
+const FLOOR_COLOR = '#0A0B1A';
 
-function TopGlow() {
-  // Gradient ids must be unique per mounted screen, or web resolves every url() to the first one.
-  const id = `glow${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+// DESIGN.md section 1: "content floats directly on a gradient/particle background."
+// Section 6: depth comes from the background gradient alone, so a faint grain layer
+// breaks up banding instead of any shadow/elevation. A pooled radial bloom behind the
+// screen's heading, muted charcoal-navy at its core (not vivid purple), falling to
+// FLOOR_COLOR by the lower third — not a uniform linear wash.
+function Atmosphere() {
+  // Ids must be unique per mounted screen, or web resolves every url() to the first one.
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
+  const glowId = `glow${uid}`;
+  const grainId = `grain${uid}`;
+
   return (
-    <Svg width="100%" height={GLOW_HEIGHT} style={styles.glow} pointerEvents="none">
+    <Svg width="100%" height="100%" style={styles.atmosphere} pointerEvents="none">
       <Defs>
-        <RadialGradient id={id} cx="50%" cy="0%" rx="85%" ry="75%" fx="50%" fy="0%">
-          <Stop offset="0" stopColor={colors.accent.primary} stopOpacity={0.16} />
-          <Stop offset="0.55" stopColor={colors.accent.primary} stopOpacity={0.04} />
-          <Stop offset="1" stopColor={colors.accent.primary} stopOpacity={0} />
+        <RadialGradient id={glowId} cx="50%" cy="22%" rx="90%" ry="46%">
+          <Stop offset="0" stopColor="#2A3152" stopOpacity={1} />
+          <Stop offset="0.5" stopColor="#161B30" stopOpacity={1} />
+          <Stop offset="1" stopColor={FLOOR_COLOR} stopOpacity={1} />
         </RadialGradient>
+        {/* A true per-pixel noise filter (feTurbulence) isn't reliably supported across
+            RN's iOS/Android/web SVG renderers, so grain is faked with a tiled speckle
+            pattern at very low opacity instead — enough to break gradient banding. */}
+        <Pattern id={grainId} width={5} height={5} patternUnits="userSpaceOnUse">
+          <Circle cx={1} cy={1.5} r={0.6} fill="#FFFFFF" />
+          <Circle cx={3.5} cy={3.5} r={0.5} fill="#FFFFFF" />
+        </Pattern>
       </Defs>
-      <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${id})`} />
+      <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${glowId})`} />
+      <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${grainId})`} opacity={0.04} />
     </Svg>
   );
 }
@@ -37,7 +56,7 @@ export function ScreenContainer({
 }: ScreenContainerProps) {
   return (
     <View style={styles.root}>
-      {glow ? <TopGlow /> : null}
+      {glow ? <Atmosphere /> : null}
       <SafeAreaView edges={edges} style={[styles.safeArea, style]}>
         {children}
       </SafeAreaView>
@@ -48,13 +67,14 @@ export function ScreenContainer({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: FLOOR_COLOR,
   },
-  glow: {
+  atmosphere: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
+    bottom: 0,
   },
   safeArea: {
     flex: 1,

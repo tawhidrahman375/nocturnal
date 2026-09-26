@@ -1,10 +1,6 @@
-import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-  useFonts,
-} from '@expo-google-fonts/inter';
+import { Figtree_400Regular, Figtree_500Medium } from '@expo-google-fonts/figtree';
+import { Fraunces_600SemiBold } from '@expo-google-fonts/fraunces';
+import { useFonts } from 'expo-font';
 import { useCallback, useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -21,10 +17,9 @@ configureNotifications();
 function AppShell() {
   const { isLoading: isAuthLoading } = useAuth();
   const [fontsLoaded] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
+    Figtree_400Regular,
+    Figtree_500Medium,
+    Fraunces_600SemiBold,
   });
 
   const ready = fontsLoaded && !isAuthLoading;
@@ -60,6 +55,12 @@ export default function App() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    // This is a phone app, full stop — on a wide desktop browser (web preview only;
+    // native screens are never this wide) the content locks to a phone-width column
+    // instead of stretching edge to edge.
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
     backgroundColor: colors.background.primary,
   },
 });

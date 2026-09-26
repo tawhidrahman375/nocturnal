@@ -1,6 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Arrive } from '../../components/Arrive';
 import { Button } from '../../components/Button';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { TextField } from '../../components/TextField';
@@ -33,7 +34,7 @@ export function SignUpScreen({ navigation }: Props) {
   if (confirmationSent) {
     return (
       <ScreenContainer>
-        <View style={styles.content}>
+        <Arrive style={styles.content}>
           <View style={styles.header}>
             <Text style={[typography.displayMd, styles.title]}>Check your email</Text>
             <Text style={[typography.body, styles.subtitle]}>
@@ -41,14 +42,14 @@ export function SignUpScreen({ navigation }: Props) {
             </Text>
           </View>
           <Button label="Back to sign in" onPress={() => navigation.navigate('SignIn')} />
-        </View>
+        </Arrive>
       </ScreenContainer>
     );
   }
 
   return (
     <ScreenContainer>
-      <View style={styles.content}>
+      <Arrive style={styles.content}>
         <View style={styles.header}>
           <Text style={[typography.displayMd, styles.title]}>Create account</Text>
           <Text style={[typography.body, styles.subtitle]}>
@@ -75,7 +76,11 @@ export function SignUpScreen({ navigation }: Props) {
             autoComplete="password-new"
             placeholder="At least 6 characters"
           />
-          {error ? <Text style={[typography.label, styles.error]}>{error}</Text> : null}
+          {error ? (
+            <Arrive from="down">
+              <Text style={[typography.label, styles.error]}>{error}</Text>
+            </Arrive>
+          ) : null}
           <Button
             label="Create account"
             onPress={handleSignUp}
@@ -89,7 +94,7 @@ export function SignUpScreen({ navigation }: Props) {
             Already have an account? <Text style={styles.footerLink}>Sign in</Text>
           </Text>
         </Pressable>
-      </View>
+      </Arrive>
     </ScreenContainer>
   );
 }

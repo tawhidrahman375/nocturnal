@@ -1,16 +1,22 @@
-import { Flame, LucideIcon, Moon, Sparkles, Trophy } from 'lucide-react-native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { useNavigation } from '@react-navigation/native';
+import { Flame, Moon, Trophy, Waves } from 'lucide-react-native';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Arrive } from '../../components/Arrive';
 import { Card } from '../../components/Card';
 import { EmptyState } from '../../components/EmptyState';
 import { ProgressRing } from '../../components/ProgressRing';
 import { ScreenContainer } from '../../components/ScreenContainer';
+import { StatPill } from '../../components/StatPill';
 import { useDreams } from '../../hooks/useDreams';
 import { useProfile } from '../../hooks/useProfile';
+import { MainTabParamList } from '../../navigation/types';
 import { colors, spacing, typography } from '../../theme';
 
 export function InsightsScreen() {
   const { dreams } = useDreams();
   const { profile } = useProfile();
+  const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
 
   const totalDreams = dreams.length;
   const lucidDreams = dreams.filter((dream) => dream.is_lucid).length;
@@ -21,58 +27,39 @@ export function InsightsScreen() {
   return (
     <ScreenContainer edges={['top']}>
       <View style={styles.header}>
-        <Text style={[typography.displayMd, styles.title]}>Insights</Text>
+        <Text style={[typography.heroTitle, styles.title]}>Insights</Text>
       </View>
 
       {totalDreams === 0 ? (
         <EmptyState
-          icon={Sparkles}
-          title="Not enough data yet"
-          message="Log a few dreams and patterns in your lucidity will show up here."
+          icon={Waves}
+          title="Nothing to trace yet."
+          message="A pattern needs more than one night. Keep logging, and it will surface."
+          tint={colors.accent.secondary}
+          action={{ label: 'Log a dream', onPress: () => navigation.navigate('Journal') }}
         />
       ) : (
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <Card style={styles.heroCard} elevated>
-            <ProgressRing size={140} strokeWidth={12} progress={lucidRate / 100} color={colors.status.lucid}>
-              <Text style={[typography.displayLg, styles.heroValue]}>{lucidRate}%</Text>
-            </ProgressRing>
-            <Text style={[typography.bodyMedium, styles.heroTitle]}>Lucid dream rate</Text>
-            <Text style={[typography.body, styles.heroBody]}>
-              {lucidDreams} of {totalDreams} logged dreams were lucid.
-            </Text>
-          </Card>
+          <Arrive>
+            <Card style={styles.heroCard} elevated>
+              <ProgressRing size={140} strokeWidth={12} progress={lucidRate / 100} color={colors.status.lucid}>
+                <Text style={[typography.displayLg, styles.heroValue]}>{lucidRate}%</Text>
+              </ProgressRing>
+              <Text style={[typography.bodyMedium, styles.heroCaption]}>Lucid dream rate</Text>
+              <Text style={[typography.body, styles.heroBody]}>
+                {lucidDreams} of {totalDreams} logged dreams were lucid.
+              </Text>
+            </Card>
+          </Arrive>
 
-          <View style={styles.statsRow}>
-            <StatCard icon={Flame} iconColor={colors.status.lucid} value={currentStreak} label="Day streak" />
-            <StatCard icon={Trophy} iconColor={colors.accent.secondary} value={longestStreak} label="Best streak" />
-          </View>
-          <View style={styles.statsRow}>
-            <StatCard icon={Moon} iconColor={colors.accent.primary} value={totalDreams} label="Dreams logged" />
-            <StatCard icon={Sparkles} iconColor={colors.status.lucid} value={lucidDreams} label="Lucid dreams" />
-          </View>
+          <Arrive delay={60} style={styles.statsRow}>
+            <StatPill icon={Flame} value={currentStreak} label="Day streak" tint={colors.status.lucid} />
+            <StatPill icon={Trophy} value={longestStreak} label="Best streak" tint={colors.accent.secondary} />
+            <StatPill icon={Moon} value={totalDreams} label="Logged" tint={colors.accent.primary} />
+          </Arrive>
         </ScrollView>
       )}
     </ScreenContainer>
-  );
-}
-
-function StatCard({
-  icon: Icon,
-  iconColor,
-  value,
-  label,
-}: {
-  icon: LucideIcon;
-  iconColor: string;
-  value: number;
-  label: string;
-}) {
-  return (
-    <Card style={styles.statCard}>
-      <Icon color={iconColor} size={20} strokeWidth={1.5} />
-      <Text style={[typography.displayMd, styles.statValue]}>{value}</Text>
-      <Text style={[typography.caption, styles.statLabel]}>{label}</Text>
-    </Card>
   );
 }
 
@@ -85,7 +72,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   scroll: {
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.tabBarClearance,
     gap: spacing.md,
   },
   heroCard: {
@@ -97,7 +84,7 @@ const styles = StyleSheet.create({
   heroValue: {
     color: colors.text.primary,
   },
-  heroTitle: {
+  heroCaption: {
     color: colors.text.primary,
     marginTop: spacing.xs,
   },
@@ -107,16 +94,6 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    gap: spacing.md,
-  },
-  statCard: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  statValue: {
-    color: colors.text.primary,
-  },
-  statLabel: {
-    color: colors.text.secondary,
+    justifyContent: 'space-between',
   },
 });

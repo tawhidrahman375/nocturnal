@@ -1,5 +1,6 @@
 import { LucideIcon } from 'lucide-react-native';
-import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text, ViewStyle } from 'react-native';
+import { ActivityIndicator, StyleProp, StyleSheet, Text, ViewStyle } from 'react-native';
+import { AnimatedPressable } from './AnimatedPressable';
 import { colors, radius, typography } from '../theme';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost';
@@ -37,17 +38,16 @@ export function Button({
   const labelColor = disabled ? colors.text.tertiary : LABEL_COLOR[variant];
 
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
       disabled={isDisabled}
       accessibilityRole="button"
       accessibilityState={{ disabled: !!isDisabled, busy: !!loading }}
-      style={({ pressed }) => [
+      style={[
         styles.base,
         size === 'sm' ? styles.sm : styles.md,
         styles[variant],
         disabled && (variant === 'primary' ? styles.primaryDisabled : styles.outlineDisabled),
-        pressed && !isDisabled && styles.pressed,
         style,
       ]}
     >
@@ -63,7 +63,7 @@ export function Button({
           </Text>
         </>
       )}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -73,7 +73,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    borderRadius: radius.button,
+    borderRadius: radius.pill,
+    // Buttons hug their label by default — a parent opts a row back into equal-width
+    // pairing with an explicit `flex: 1` override, but nothing stretches edge-to-edge.
+    alignSelf: 'flex-start',
   },
   md: {
     height: 52,
@@ -103,9 +106,5 @@ const styles = StyleSheet.create({
   outlineDisabled: {
     backgroundColor: 'transparent',
     borderColor: colors.border.default,
-  },
-  pressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.98 }],
   },
 });

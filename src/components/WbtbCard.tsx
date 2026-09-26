@@ -3,19 +3,20 @@ import { AlarmClock } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Button } from './Button';
-import { Card } from './Card';
 import { LoadingView } from './LoadingView';
 import { useNow } from '../hooks/useNow';
 import { useOpenWbtbSession } from '../hooks/useOpenWbtbSession';
-import { formatDuration, formatTime, MINUTE_MS } from '../lib/wbtb';
+import { formatDuration, formatTime, MINUTE_MS, WbtbTechnique } from '../lib/wbtb';
 import { cancelSession } from '../lib/wbtbSessions';
-import { colors, spacing, typography } from '../theme';
+import { colors, fontFamily, spacing, typography } from '../theme';
 
 function Eyebrow({ label, action }: { label: string; action?: { label: string; onPress: () => void } }) {
   return (
     <View style={styles.eyebrowRow}>
       <View style={styles.eyebrowLeft}>
-        <AlarmClock color={colors.accent.primary} size={18} strokeWidth={1.5} />
+        <View style={styles.eyebrowIconChip}>
+          <AlarmClock color={colors.accent.primary} size={14} strokeWidth={2} />
+        </View>
         <Text style={[typography.label, styles.eyebrow]}>{label}</Text>
       </View>
       {action ? (
@@ -35,34 +36,38 @@ export function WbtbCard() {
 
   if (isLoading) {
     return (
-      <Card style={styles.loadingCard}>
+      <View style={styles.loadingCard}>
         <LoadingView label="Checking tonight's alarm" />
-      </Card>
+      </View>
     );
   }
 
   if (error && !session) {
     return (
-      <Card style={styles.card}>
+      <View style={styles.card}>
         <Eyebrow label="Tonight" />
-        <Text style={[typography.body, styles.body]}>Couldn&apos;t load your WBTB alarm.</Text>
+        <Text style={[typography.body, styles.body]}>Your alarm didn&apos;t load.</Text>
         <Button label="Try again" variant="secondary" onPress={reload} />
-      </Card>
+      </View>
     );
   }
 
   if (!session) {
     return (
-      <Card style={styles.card}>
+      <View style={styles.card}>
         <Eyebrow label="Tonight" />
         <View style={styles.copy}>
-          <Text style={[typography.heading, styles.title]}>Wake Back To Bed</Text>
+          <Text style={[typography.heading, styles.wakeTitle]}>Wake Back To Bed</Text>
           <Text style={[typography.body, styles.body]}>
-            Wake after 5–6 hours, stay up for 20 minutes, then drift back with a lucid intention.
+            Wake after 5 to 6 hours. Stay up 20 minutes. Drift back with intention.
           </Text>
         </View>
-        <Button label="Plan tonight" onPress={() => navigation.navigate('WbtbSetup')} />
-      </Card>
+        <Button
+          label="Plan tonight"
+          onPress={() => navigation.navigate('WbtbSetup')}
+          style={styles.planButton}
+        />
+      </View>
     );
   }
 
@@ -70,22 +75,22 @@ export function WbtbCard() {
 
   if (session.status === 'active') {
     return (
-      <Card style={styles.card}>
+      <View style={styles.card}>
         <Eyebrow label="In progress" />
         <Text style={[typography.heading, styles.title]}>Your session is waiting</Text>
         <Button label="Resume session" onPress={openSession} />
-      </Card>
+      </View>
     );
   }
 
   const wakeAt = new Date(session.wake_at);
   if (wakeAt <= now) {
     return (
-      <Card style={styles.card}>
+      <View style={styles.card}>
         <Eyebrow label="Alarm" />
         <Text style={[typography.heading, styles.title]}>Your wake window is open</Text>
         <Button label="Begin session" onPress={openSession} />
-      </Card>
+      </View>
     );
   }
 
@@ -102,7 +107,7 @@ export function WbtbCard() {
   const sleepMinutes = (wakeAt.getTime() - new Date(session.sleep_at).getTime()) / MINUTE_MS;
 
   return (
-    <Card style={styles.card}>
+    <View style={styles.card}>
       <Eyebrow label="Alarm set" action={{ label: 'Cancel', onPress: handleCancel }} />
       <View style={styles.copy}>
         <Text style={[typography.displayMd, styles.time]}>{formatTime(wakeAt)}</Text>
@@ -123,22 +128,25 @@ export function WbtbCard() {
                 sleepAt: session.sleep_at,
                 sleepMinutes,
                 wakeWindowMinutes: session.wake_window_minutes,
+                technique: session.technique as WbtbTechnique,
               },
             })
           }
           style={styles.flex}
         />
       </View>
-    </Card>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
     gap: spacing.md,
+    padding: spacing.cardPadding,
   },
   loadingCard: {
     height: 164,
+    padding: spacing.cardPadding,
   },
   eyebrowRow: {
     flexDirection: 'row',
@@ -149,11 +157,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    opacity: 0.4,
+  },
+  eyebrowIconChip: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.accent.primaryMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   eyebrow: {
     color: colors.text.tertiary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontSize: 10,
+    letterSpacing: 1.5,
   },
   eyebrowAction: {
     color: colors.text.secondary,
@@ -163,6 +181,11 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text.primary,
+  },
+  wakeTitle: {
+    color: colors.text.primary,
+    fontFamily: fontFamily.serif,
+    fontSize: 26,
   },
   body: {
     color: colors.text.secondary,
@@ -183,5 +206,13 @@ const styles = StyleSheet.create({
   },
   flex: {
     flex: 1,
+  },
+  planButton: {
+    height: 44,
+    // Same navy identity as before, just lightened a step and given a lighter edge —
+    // #1E2A4A alone was reading as nearly the same tone as the atmosphere behind it.
+    backgroundColor: '#26365C',
+    borderWidth: 1,
+    borderColor: '#4A5C8C',
   },
 });

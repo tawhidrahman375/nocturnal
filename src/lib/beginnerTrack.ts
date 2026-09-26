@@ -72,7 +72,7 @@ export const TRACK_DAYS: TrackDay[] = [
     day: 8,
     phase: 'journaling',
     title: 'Start your dream journal',
-    description: 'The moment you wake up, log whatever you remember in Journal — even a single fragment counts.',
+    description: 'The moment you wake up, log whatever you remember in Journal. Even a single fragment counts.',
   },
   {
     day: 9,
@@ -84,7 +84,7 @@ export const TRACK_DAYS: TrackDay[] = [
     day: 10,
     phase: 'journaling',
     title: 'Spot a dream sign',
-    description: 'Tag one recurring detail in today\'s entry — a place, person, or event that keeps showing up.',
+    description: 'Tag one recurring detail in today\'s entry, a place, person, or event that keeps showing up.',
   },
   {
     day: 11,
@@ -186,7 +186,7 @@ export const TRACK_DAYS: TrackDay[] = [
     day: 27,
     phase: 'mild',
     title: 'Reality checks, still',
-    description: "Don't drop the daytime habit — it's still reinforcing everything you're doing at night.",
+    description: "Don't drop the daytime habit. It's still reinforcing everything you're doing at night.",
   },
   {
     day: 28,
@@ -198,7 +198,7 @@ export const TRACK_DAYS: TrackDay[] = [
     day: 29,
     phase: 'mild',
     title: 'One more full stack',
-    description: 'Run reality checks, Wake Back to Bed, and MILD together again — repetition is what builds the reflex.',
+    description: 'Run reality checks, Wake Back to Bed, and MILD together again. Repetition is what builds the reflex.',
   },
   {
     day: 30,

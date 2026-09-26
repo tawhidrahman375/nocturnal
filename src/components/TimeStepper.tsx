@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { AnimatedPressable } from './AnimatedPressable';
 import { addMinutes, formatClock } from '../lib/wbtb';
 import { colors, spacing, typography } from '../theme';
 
@@ -20,20 +21,20 @@ type StepButtonProps = {
 function StepButton({ direction, disabled, onPress, label }: StepButtonProps) {
   const Icon = direction === 'up' ? ChevronUp : ChevronDown;
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
       disabled={disabled}
       hitSlop={6}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={({ pressed }) => [styles.stepButton, pressed && styles.stepButtonPressed]}
+      style={styles.stepButton}
     >
       <Icon
         color={disabled ? colors.border.default : colors.text.secondary}
         size={24}
         strokeWidth={1.5}
       />
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -80,9 +81,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-  },
-  stepButtonPressed: {
-    backgroundColor: colors.surface.card,
   },
   digits: {
     color: colors.text.primary,

@@ -1,6 +1,7 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Arrive } from '../../components/Arrive';
 import { Button } from '../../components/Button';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { TextField } from '../../components/TextField';
@@ -27,7 +28,7 @@ export function SignInScreen({ navigation }: Props) {
 
   return (
     <ScreenContainer>
-      <View style={styles.content}>
+      <Arrive style={styles.content}>
         <View style={styles.header}>
           <Text style={[typography.displayMd, styles.title]}>Welcome back</Text>
           <Text style={[typography.body, styles.subtitle]}>
@@ -54,7 +55,11 @@ export function SignInScreen({ navigation }: Props) {
             autoComplete="password"
             placeholder="••••••••"
           />
-          {error ? <Text style={[typography.label, styles.error]}>{error}</Text> : null}
+          {error ? (
+            <Arrive from="down">
+              <Text style={[typography.label, styles.error]}>{error}</Text>
+            </Arrive>
+          ) : null}
           <Button
             label="Sign in"
             onPress={handleSignIn}
@@ -68,7 +73,7 @@ export function SignInScreen({ navigation }: Props) {
             New here? <Text style={styles.footerLink}>Create an account</Text>
           </Text>
         </Pressable>
-      </View>
+      </Arrive>
     </ScreenContainer>
   );
 }

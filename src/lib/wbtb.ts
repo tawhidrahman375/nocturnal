@@ -2,7 +2,23 @@ import { Tables } from '../types/database';
 
 export type WbtbSession = Tables<'wbtb_sessions'>;
 export type WbtbStatus = 'scheduled' | 'active' | 'completed' | 'skipped' | 'missed' | 'cancelled';
-export type WbtbStage = 'alarm' | 'recall' | 'window' | 'mild' | 'closed';
+export type WbtbStage = 'alarm' | 'recall' | 'window' | 'technique' | 'closed';
+
+export type WbtbTechnique = 'mild' | 'wild' | 'ssild';
+
+export const TECHNIQUE_OPTIONS: readonly WbtbTechnique[] = ['mild', 'wild', 'ssild'];
+
+export const TECHNIQUE_LABELS: Record<WbtbTechnique, string> = {
+  mild: 'MILD',
+  wild: 'WILD',
+  ssild: 'SSILD',
+};
+
+export const TECHNIQUE_DESCRIPTIONS: Record<WbtbTechnique, string> = {
+  mild: 'Repeat an intention while picturing yourself back in a dream.',
+  wild: 'Stay still and let awareness carry through into a dream.',
+  ssild: 'Cycle attention through sight, sound, and touch.',
+};
 
 export const SLEEP_DURATION_OPTIONS = [300, 330, 360] as const;
 // Six hours lands late in the fourth ~90 min cycle, where REM periods are longest.
@@ -13,7 +29,26 @@ export const DEFAULT_WAKE_WINDOW_MINUTES = 20;
 
 export const MILD_MANTRA = "Next time I'm dreaming, I will remember I'm dreaming.";
 
+// Closing copy for ClosedStage — technique-aware since MILD_MANTRA only fits MILD.
+export const TECHNIQUE_CLOSING_LINES: Record<WbtbTechnique, string> = {
+  mild: MILD_MANTRA,
+  wild: 'Let the images come. Stay soft, stay aware.',
+  ssild: 'Cycles complete. Let go, and let sleep take over.',
+};
+
+// WILD: if this many minutes pass in the passive phase with no interaction, a quiet
+// reassurance line appears — lying awake this long is normal, not a stall.
+export const WILD_REASSURANCE_MINUTES = 15;
+
+// SSILD: seconds spent on each sense per cycle, cycles per round, seconds of rest
+// between rounds, and how many rounds make up a full session.
+export const SSILD_SENSE_SECONDS = 15;
+export const SSILD_CYCLES_PER_ROUND = 3;
+export const SSILD_REST_SECONDS = 45;
+export const SSILD_ROUNDS = 3;
+
 export const MINUTE_MS = 60_000;
+export const SECOND_MS = 1000;
 const SLEEP_TIME_STEP_MINUTES = 15;
 
 export function addMinutes(date: Date, minutes: number) {
@@ -40,7 +75,7 @@ export function wakeWindowEndsAt(session: WbtbSession) {
 export function stageForSession(session: WbtbSession): WbtbStage {
   const status = session.status as WbtbStatus;
   if (status === 'scheduled') return 'alarm';
-  if (status === 'active') return session.wake_window_ended_at ? 'mild' : 'window';
+  if (status === 'active') return session.wake_window_ended_at ? 'technique' : 'window';
   return 'closed';
 }
 

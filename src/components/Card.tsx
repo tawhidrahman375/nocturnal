@@ -15,9 +15,12 @@ export function Card({ children, style, elevated }: CardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surface.card,
+    // A real fill + hairline, not a flat opaque block — reads as glass sitting a step
+    // above the atmosphere behind it, distinct from the deliberately card-less WBTB/Track
+    // components and the full-screen empty states, which stay bare on purpose.
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: colors.border.subtle,
     borderRadius: radius.card,
     padding: spacing.cardPadding,
   },

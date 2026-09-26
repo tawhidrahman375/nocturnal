@@ -1,5 +1,5 @@
 import { BookOpen, Hand, Lamp, LucideIcon } from 'lucide-react-native';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Easing, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
 import { ProgressRing } from '../../../components/ProgressRing';
@@ -37,7 +37,13 @@ export function WakeWindowStage({ session, onContinue }: WakeWindowStageProps) {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.ringWrap}>
-          <ProgressRing size={232} strokeWidth={6} progress={1 - remainingMs / totalMs}>
+          <ProgressRing
+            size={232}
+            strokeWidth={6}
+            progress={1 - remainingMs / totalMs}
+            durationMs={1000}
+            easing={Easing.linear}
+          >
             <Text style={[typography.clock, styles.countdown]}>{formatCountdown(remainingMs)}</Text>
             <Text style={[typography.label, styles.ringLabel]}>
               {isDone ? 'Complete' : `of ${session.wake_window_minutes} min`}
