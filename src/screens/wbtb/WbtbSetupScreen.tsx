@@ -1,14 +1,18 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { X } from 'lucide-react-native';
+import { Moon, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AnimatedPressable } from '../../components/AnimatedPressable';
+import { Arrive } from '../../components/Arrive';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { ChipGroup } from '../../components/ChipGroup';
+import { PrePermissionModal } from '../../components/PrePermissionModal';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { TimeStepper } from '../../components/TimeStepper';
 import { useAuth } from '../../hooks/useAuth';
 import { useNow } from '../../hooks/useNow';
+import { usePrePermissionGate } from '../../hooks/usePrePermissionGate';
 import { notificationsSupported, requestAlarmPermission } from '../../lib/notifications';
 import {
   addMinutes,
@@ -19,7 +23,11 @@ import {
   formatTime,
   RECOMMENDED_SLEEP_MINUTES,
   SLEEP_DURATION_OPTIONS,
+  TECHNIQUE_DESCRIPTIONS,
+  TECHNIQUE_LABELS,
+  TECHNIQUE_OPTIONS,
   WAKE_WINDOW_OPTIONS,
+  WbtbTechnique,
 } from '../../lib/wbtb';
 import { planSession } from '../../lib/wbtbSessions';
 import { AppStackParamList } from '../../navigation/types';
@@ -43,9 +51,11 @@ export function WbtbSetupScreen({ navigation, route }: Props) {
   const [wakeWindowMinutes, setWakeWindowMinutes] = useState(
     (plan?.wakeWindowMinutes ?? DEFAULT_WAKE_WINDOW_MINUTES) as WakeWindowMinutes
   );
+  const [technique, setTechnique] = useState<WbtbTechnique>(plan?.technique ?? 'mild');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [permissionBlocked, setPermissionBlocked] = useState(false);
+  const alarmPermission = usePrePermissionGate('wbtb-alarm', requestAlarmPermission);
 
   const wakeAt = calculateWakeTime(sleepAt, sleepMinutes);
   const backToSleepAt = addMinutes(wakeAt, wakeWindowMinutes);
@@ -56,11 +66,11 @@ export function WbtbSetupScreen({ navigation, route }: Props) {
     setPermissionBlocked(false);
     setSaving(true);
     try {
-      if (!(await requestAlarmPermission())) {
+      if (!(await alarmPermission.requestWithGate())) {
         setPermissionBlocked(true);
         return;
       }
-      await planSession({ userId: user.id, sleepAt, wakeAt, wakeWindowMinutes });
+      await planSession({ userId: user.id, sleepAt, wakeAt, wakeWindowMinutes, technique });
       navigation.goBack();
     } catch (e) {
       setError((e as Error).message);
@@ -78,73 +88,98 @@ export function WbtbSetupScreen({ navigation, route }: Props) {
             {plan ? 'Change your alarm' : 'Plan tonight'}
           </Text>
         </View>
-        <Pressable
+        <AnimatedPressable
           onPress={() => navigation.goBack()}
           hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel="Close"
         >
           <X color={colors.text.secondary} size={24} strokeWidth={1.5} />
-        </Pressable>
+        </AnimatedPressable>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.section}>
-          <Text style={[typography.label, styles.sectionLabel]}>Going to sleep at</Text>
-          <TimeStepper
-            value={sleepAt}
-            onChange={setSleepAt}
-            min={addMinutes(now, -120)}
-            max={addMinutes(now, 23 * 60)}
-          />
-        </View>
+        <Arrive>
+          <View style={styles.section}>
+            <Text style={[typography.label, styles.sectionLabel]}>Going to sleep at</Text>
+            <TimeStepper
+              value={sleepAt}
+              onChange={setSleepAt}
+              min={addMinutes(now, -120)}
+              max={addMinutes(now, 23 * 60)}
+            />
+          </View>
+        </Arrive>
 
-        <View style={styles.section}>
-          <Text style={[typography.label, styles.sectionLabel]}>Sleep before waking</Text>
-          <ChipGroup
-            options={SLEEP_DURATION_OPTIONS}
-            value={sleepMinutes}
-            onChange={setSleepMinutes}
-            format={formatDuration}
-          />
-          <Text style={[typography.label, styles.caption]}>
-            6h is recommended. It lands late in your fourth sleep cycle, when REM periods run
-            longest and dreams are easiest to recall.
-          </Text>
-        </View>
+        <Arrive delay={50}>
+          <View style={styles.section}>
+            <Text style={[typography.label, styles.sectionLabel]}>Sleep before waking</Text>
+            <ChipGroup
+              options={SLEEP_DURATION_OPTIONS}
+              value={sleepMinutes}
+              onChange={setSleepMinutes}
+              format={formatDuration}
+            />
+            <Text style={[typography.label, styles.caption]}>
+              6h is recommended. It lands late in your fourth sleep cycle, when REM periods run
+              longest and dreams are easiest to recall.
+            </Text>
+          </View>
+        </Arrive>
 
-        <View style={styles.section}>
-          <Text style={[typography.label, styles.sectionLabel]}>Wake window</Text>
-          <ChipGroup
-            options={WAKE_WINDOW_OPTIONS}
-            value={wakeWindowMinutes}
-            onChange={setWakeWindowMinutes}
-            format={(m) => `${m} min`}
-          />
-          <Text style={[typography.label, styles.caption]}>
-            Long enough to wake your mind, short enough to slip back into REM.
-          </Text>
-        </View>
+        <Arrive delay={100}>
+          <View style={styles.section}>
+            <Text style={[typography.label, styles.sectionLabel]}>Wake window</Text>
+            <ChipGroup
+              options={WAKE_WINDOW_OPTIONS}
+              value={wakeWindowMinutes}
+              onChange={setWakeWindowMinutes}
+              format={(m) => `${m} min`}
+            />
+            <Text style={[typography.label, styles.caption]}>
+              Long enough to wake your mind, short enough to slip back into REM.
+            </Text>
+          </View>
+        </Arrive>
 
-        <Card style={styles.timeline}>
-          <TimelineRow label="Sleep" time={formatTime(sleepAt)} />
-          <TimelineRow label="Alarm" time={formatTime(wakeAt)} highlight />
-          <TimelineRow label="Back to sleep" time={`~${formatTime(backToSleepAt)}`} last />
-        </Card>
+        <Arrive delay={150}>
+          <View style={styles.section}>
+            <Text style={[typography.label, styles.sectionLabel]}>Technique</Text>
+            <ChipGroup
+              options={TECHNIQUE_OPTIONS}
+              value={technique}
+              onChange={setTechnique}
+              format={(t) => TECHNIQUE_LABELS[t]}
+            />
+            <Text style={[typography.label, styles.caption]}>{TECHNIQUE_DESCRIPTIONS[technique]}</Text>
+          </View>
+        </Arrive>
+
+        <Arrive delay={200}>
+          <Card style={styles.timeline}>
+            <TimelineRow label="Sleep" time={formatTime(sleepAt)} />
+            <TimelineRow label="Alarm" time={formatTime(wakeAt)} highlight />
+            <TimelineRow label="Back to sleep" time={`~${formatTime(backToSleepAt)}`} last />
+          </Card>
+        </Arrive>
       </ScrollView>
 
       <View style={styles.footer}>
         {permissionBlocked ? (
-          <View style={styles.notice}>
+          <Arrive from="down" style={styles.notice}>
             <Text style={[typography.label, styles.errorText]}>
               Notifications are off, so your alarm can&apos;t ring.
             </Text>
-            <Pressable onPress={() => Linking.openSettings()} hitSlop={8}>
+            <AnimatedPressable onPress={() => Linking.openSettings()} hitSlop={8}>
               <Text style={[typography.label, styles.link]}>Open settings</Text>
-            </Pressable>
-          </View>
+            </AnimatedPressable>
+          </Arrive>
         ) : null}
-        {error ? <Text style={[typography.label, styles.errorText]}>{error}</Text> : null}
+        {error ? (
+          <Arrive from="down">
+            <Text style={[typography.label, styles.errorText]}>{error}</Text>
+          </Arrive>
+        ) : null}
         {!notificationsSupported ? (
           <Text style={[typography.label, styles.caption]}>
             Alarms only ring in the iOS and Android apps. Your session will still be saved.
@@ -156,6 +191,16 @@ export function WbtbSetupScreen({ navigation, route }: Props) {
           loading={saving}
         />
       </View>
+
+      <PrePermissionModal
+        visible={alarmPermission.visible}
+        icon={Moon}
+        headline="WBTB only works if the alarm actually wakes you"
+        body="Your WBTB alarm needs to break through Do Not Focus and sleep mode. Allow this so Nocturnal can wake you at exactly the right moment in your sleep cycle."
+        ctaLabel="Allow Alarm"
+        onAllow={alarmPermission.handleAllow}
+        onDismiss={alarmPermission.handleDismiss}
+      />
     </ScreenContainer>
   );
 }
@@ -177,7 +222,12 @@ function TimelineRow({
         <View style={[styles.dot, highlight && styles.dotHighlight]} />
         {last ? null : <View style={styles.connector} />}
       </View>
-      <Text style={[typography.body, highlight ? styles.timelineLabelStrong : styles.timelineLabel]}>
+      <Text
+        style={[
+          highlight ? typography.bodyMedium : typography.body,
+          highlight ? styles.timelineLabelStrong : styles.timelineLabel,
+        ]}
+      >
         {label}
       </Text>
       <Text
