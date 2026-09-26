@@ -11,6 +11,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { Dream, useDreams } from '../../hooks/useDreams';
 import { useDreamSignReveal } from '../../hooks/useDreamSignReveal';
 import { useMilestoneCheck } from '../../hooks/useMilestoneCheck';
+import { useReviewPrompt } from '../../hooks/useReviewPrompt';
 import { colors, radius, spacing, typography } from '../../theme';
 
 // dreamed_at is stored as a local "YYYY-MM-DD" day (see lib/streaks.ts), so it's parsed
@@ -50,6 +51,17 @@ export function JournalScreen() {
   const openSheet = () => setSheetVisible(true);
   const { milestone, checkLucidDreamMilestone, dismissMilestone } = useMilestoneCheck();
   const { currentSign, checkForNewSigns, dismissCurrentSign } = useDreamSignReveal();
+  const { triggerReviewPrompt } = useReviewPrompt();
+
+  const handleMilestoneDismiss = () => {
+    const wasFirstLucidDream = milestone === 'firstLucidDream';
+    dismissMilestone();
+    // The 1s delay lets the overlay's own fade-out finish before the system review
+    // sheet interrupts, so the two never visually collide.
+    if (wasFirstLucidDream) {
+      setTimeout(() => triggerReviewPrompt(), 1000);
+    }
+  };
 
   return (
     <ScreenContainer edges={['top']}>
@@ -86,7 +98,7 @@ export function JournalScreen() {
         }}
       />
 
-      <MilestoneOverlay milestone={milestone} visible={milestone !== null} onDismiss={dismissMilestone} />
+      <MilestoneOverlay milestone={milestone} visible={milestone !== null} onDismiss={handleMilestoneDismiss} />
       <DreamSignRevealOverlay sign={currentSign} visible={currentSign !== null} onDismiss={dismissCurrentSign} />
     </ScreenContainer>
   );
