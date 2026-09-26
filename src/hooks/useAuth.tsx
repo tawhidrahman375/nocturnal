@@ -15,6 +15,7 @@ type AuthContextValue = {
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
   signUpWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<{ error: string | null }>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -50,6 +51,17 @@ export function AuthProvider({ children }: PropsWithChildren) {
     await supabase.auth.signOut();
   };
 
+  // Runs the `delete_user_account` Postgres function (security definer, deletes
+  // the caller's own auth.users row via auth.uid() — see the migration). Every
+  // public table FKs to auth.users with ON DELETE CASCADE, so this alone wipes
+  // profiles/dreams/etc. too; no service-role key ever touches the client.
+  const deleteAccount = async () => {
+    const { error } = await supabase.rpc('delete_user_account');
+    if (error) return { error: error.message };
+    await supabase.auth.signOut();
+    return { error: null };
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -59,6 +71,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         signInWithEmail,
         signUpWithEmail,
         signOut,
+        deleteAccount,
       }}
     >
       {children}
