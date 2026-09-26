@@ -1,7 +1,9 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
+import { WbtbTechnique } from '../lib/wbtb';
 
 export type AuthStackParamList = {
   Welcome: undefined;
+  Preview: undefined;
   SignIn: undefined;
   SignUp: undefined;
 };
@@ -17,6 +19,7 @@ export type WbtbPlan = {
   sleepAt: string;
   sleepMinutes: number;
   wakeWindowMinutes: number;
+  technique: WbtbTechnique;
 };
 
 export type AppStackParamList = {

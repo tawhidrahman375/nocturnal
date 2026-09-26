@@ -1,5 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { StyleSheet, Text, View } from 'react-native';
+import { Arrive } from '../../components/Arrive';
 import { Button } from '../../components/Button';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { colors, spacing, typography } from '../../theme';
@@ -11,19 +12,19 @@ export function WelcomeScreen({ navigation }: Props) {
   return (
     <ScreenContainer>
       <View style={styles.content}>
-        <View style={styles.hero}>
+        <Arrive style={styles.hero}>
           <Text style={[typography.displayLg, styles.title]}>Nocturnal</Text>
           <Text style={[typography.subheading, styles.tagline]}>Control Your Dreams</Text>
-        </View>
+        </Arrive>
 
-        <View style={styles.actions}>
+        <Arrive delay={80} style={styles.actions}>
           <Button label="Sign in" onPress={() => navigation.navigate('SignIn')} />
           <Button
             label="Create account"
             variant="secondary"
-            onPress={() => navigation.navigate('SignUp')}
+            onPress={() => navigation.navigate('Preview')}
           />
-        </View>
+        </Arrive>
       </View>
     </ScreenContainer>
   );
