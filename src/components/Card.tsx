@@ -15,18 +15,17 @@ export function Card({ children, style, elevated }: CardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    // A real fill + hairline, not a flat opaque block — reads as glass sitting a step
-    // above the atmosphere behind it, distinct from the deliberately card-less WBTB/Track
-    // components and the full-screen empty states, which stay bare on purpose.
+    // Depth comes from a flat color shift off the background, not a stroke. Rule of
+    // thumb for when to use this component at all: a single floating action/headline
+    // prompt (WBTB/Track on Home) stays a bare View and doesn't use Card; a module
+    // presenting multiple discrete list-like items (a checklist, a settings list, a
+    // journal list) uses Card so the group reads as one contained unit. Full-screen
+    // empty states also stay bare on purpose.
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
     borderRadius: radius.card,
     padding: spacing.cardPadding,
   },
   elevated: {
     backgroundColor: colors.surface.cardElevated,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.accent.primary,
   },
 });

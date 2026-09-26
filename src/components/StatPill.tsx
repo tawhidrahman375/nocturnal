@@ -14,7 +14,7 @@ type StatPillProps = {
 export function StatPill({ icon: Icon, value, label, tint = colors.accent.primary }: StatPillProps) {
   return (
     <View style={styles.container}>
-      <View style={[styles.pill, { borderColor: tint }]}>
+      <View style={styles.pill}>
         <Icon color={tint} size={16} strokeWidth={1.75} />
         <Text style={[typography.bodyMedium, styles.value]}>{value}</Text>
       </View>
@@ -35,8 +35,7 @@ const styles = StyleSheet.create({
     height: 40,
     paddingHorizontal: spacing.md,
     borderRadius: radius.pill,
-    borderWidth: 1.5,
-    backgroundColor: colors.surface.card,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   value: {
     color: colors.text.primary,
