@@ -196,7 +196,7 @@ export function WbtbSetupScreen({ navigation, route }: Props) {
         visible={alarmPermission.visible}
         icon={Moon}
         headline="WBTB only works if the alarm actually wakes you"
-        body="Your WBTB alarm needs to break through Do Not Focus and sleep mode. Allow this so Nocturnal can wake you at exactly the right moment in your sleep cycle."
+        body="Your WBTB alarm needs to break through Do Not Disturb and sleep mode. Allow this so Nocturnal can wake you at exactly the right moment in your sleep cycle."
         ctaLabel="Allow Alarm"
         onAllow={alarmPermission.handleAllow}
         onDismiss={alarmPermission.handleDismiss}
