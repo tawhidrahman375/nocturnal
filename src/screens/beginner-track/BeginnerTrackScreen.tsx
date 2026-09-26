@@ -2,11 +2,13 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ArrowLeft, Circle, CircleCheck, Lock } from 'lucide-react-native';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { Arrive } from '../../components/Arrive';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { CrossFade } from '../../components/CrossFade';
+import { Panel } from '../../components/Panel';
 import { PopIn } from '../../components/PopIn';
 import { ProgressBar } from '../../components/ProgressBar';
 import { ScreenContainer } from '../../components/ScreenContainer';
@@ -21,6 +23,10 @@ export function BeginnerTrackScreen({ navigation }: Props) {
   const { startedAt, currentDay, completedDays, isLoading, error, start, toggleDay } = useBeginnerTrack();
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  // ScreenContainer only reserves the top safe-area inset here (edges={['top']}), so
+  // the Panel can bleed to the literal screen bottom per DESIGN.md §4 — this screen
+  // has no floating tab bar to clear, so the bottom inset is added by hand instead.
+  const insets = useSafeAreaInsets();
 
   const handleStart = async () => {
     setBusy(true);
@@ -53,7 +59,7 @@ export function BeginnerTrackScreen({ navigation }: Props) {
   const allDone = completedDays.size >= TRACK_LENGTH;
 
   return (
-    <ScreenContainer>
+    <ScreenContainer edges={['top']} edgeToEdge>
       <View style={styles.header}>
         <AnimatedPressable
           onPress={() => navigation.goBack()}
@@ -70,95 +76,100 @@ export function BeginnerTrackScreen({ navigation }: Props) {
         <View style={styles.headerSpacer} />
       </View>
 
-      {isLoading ? null : !startedAt ? (
-        <Arrive style={styles.introWrap}>
-          <Card style={styles.introCard} elevated>
-            <Text style={[typography.heading, styles.introTitle]}>30 days to your first lucid dream</Text>
-            <Text style={[typography.body, styles.introBody]}>
-              A day-by-day program: reality checks first, then journaling habits, then Wake Back to
-              Bed, then MILD, building one on top of the last.
-            </Text>
-          </Card>
-          {actionError ? (
-            <Arrive from="down">
-              <Text style={[typography.label, styles.errorText]}>{actionError}</Text>
-            </Arrive>
-          ) : null}
-          <Button label="Start the track" onPress={handleStart} loading={busy} />
-        </Arrive>
-      ) : (
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <View style={styles.progressSection}>
-            <View style={styles.progressHeaderRow}>
-              <Text style={[typography.label, styles.progressLabel]}>Day {currentDay} of {TRACK_LENGTH}</Text>
-              <Text style={[typography.label, styles.progressLabel]}>
-                {completedDays.size}/{TRACK_LENGTH} complete
+      <Panel>
+        {isLoading ? null : !startedAt ? (
+          <Arrive style={[styles.introWrap, { paddingBottom: insets.bottom }]}>
+            <Card style={styles.introCard} elevated>
+              <Text style={[typography.heading, styles.introTitle]}>30 days to your first lucid dream</Text>
+              <Text style={[typography.body, styles.introBody]}>
+                A day-by-day program: reality checks first, then journaling habits, then Wake Back to
+                Bed, then MILD, building one on top of the last.
               </Text>
-            </View>
-            <ProgressBar progress={progress} color={colors.accent.primary} trackColor={colors.surface.card} />
-          </View>
-
-          {allDone ? (
-            <Arrive>
-              <Card style={styles.bannerCard} elevated>
-                <Text style={[typography.body, styles.bannerText]}>
-                  You&apos;ve completed the 30-day track. These habits are yours to keep.
-                </Text>
-              </Card>
-            </Arrive>
-          ) : null}
-
-          {todaysTask ? (
-            <Arrive delay={40}>
-              <Card style={styles.todayCard} elevated>
-                <Text style={[typography.label, styles.todayEyebrow]}>{PHASE_LABELS[todaysTask.phase]}</Text>
-                <Text style={[typography.heading, styles.todayTitle]}>{todaysTask.title}</Text>
-                <Text style={[typography.body, styles.todayBody]}>{todaysTask.description}</Text>
-                {actionError ? (
-                  <Arrive from="down">
-                    <Text style={[typography.label, styles.errorText]}>{actionError}</Text>
-                  </Arrive>
-                ) : null}
-                <CrossFade contentKey={isTodayDone ? 'done' : 'pending'}>
-                  {isTodayDone ? (
-                    <View style={styles.doneRow}>
-                      <PopIn>
-                        <CircleCheck color={colors.status.lucid} size={20} strokeWidth={1.5} />
-                      </PopIn>
-                      <Text style={[typography.bodyMedium, styles.doneText]}>Completed today</Text>
-                      <AnimatedPressable onPress={handleToggleToday} hitSlop={10} disabled={busy}>
-                        <Text style={[typography.label, styles.undoLink]}>Undo</Text>
-                      </AnimatedPressable>
-                    </View>
-                  ) : (
-                    <Button label="Mark day complete" onPress={handleToggleToday} loading={busy} />
-                  )}
-                </CrossFade>
-              </Card>
-            </Arrive>
-          ) : null}
-
-          <View style={styles.list}>
-            {TRACK_DAYS.map((trackDay, index) => (
-              <Arrive key={trackDay.day} delay={Math.min(index, 10) * 25}>
-                <DayRow
-                  day={trackDay.day}
-                  title={trackDay.title}
-                  isCurrent={trackDay.day === currentDay}
-                  isDone={completedDays.has(trackDay.day)}
-                  isFuture={currentDay !== null && trackDay.day > currentDay}
-                />
+            </Card>
+            {actionError ? (
+              <Arrive from="down">
+                <Text style={[typography.label, styles.errorText]}>{actionError}</Text>
               </Arrive>
-            ))}
-          </View>
-        </ScrollView>
-      )}
+            ) : null}
+            <Button label="Start the track" onPress={handleStart} loading={busy} />
+          </Arrive>
+        ) : (
+          <ScrollView
+            contentContainerStyle={[styles.scroll, { paddingBottom: spacing.xxl + insets.bottom }]}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.progressSection}>
+              <View style={styles.progressHeaderRow}>
+                <Text style={[typography.label, styles.progressLabel]}>Day {currentDay} of {TRACK_LENGTH}</Text>
+                <Text style={[typography.label, styles.progressLabel]}>
+                  {completedDays.size}/{TRACK_LENGTH} complete
+                </Text>
+              </View>
+              <ProgressBar progress={progress} color={colors.accent.primary} trackColor={colors.surface.card} />
+            </View>
 
-      {error ? (
-        <Arrive from="down">
-          <Text style={[typography.label, styles.errorText]}>{error}</Text>
-        </Arrive>
-      ) : null}
+            {allDone ? (
+              <Arrive>
+                <Card style={styles.bannerCard} elevated>
+                  <Text style={[typography.body, styles.bannerText]}>
+                    You&apos;ve completed the 30-day track. These habits are yours to keep.
+                  </Text>
+                </Card>
+              </Arrive>
+            ) : null}
+
+            {todaysTask ? (
+              <Arrive delay={40}>
+                <Card style={styles.todayCard} elevated>
+                  <Text style={[typography.label, styles.todayEyebrow]}>{PHASE_LABELS[todaysTask.phase]}</Text>
+                  <Text style={[typography.heading, styles.todayTitle]}>{todaysTask.title}</Text>
+                  <Text style={[typography.body, styles.todayBody]}>{todaysTask.description}</Text>
+                  {actionError ? (
+                    <Arrive from="down">
+                      <Text style={[typography.label, styles.errorText]}>{actionError}</Text>
+                    </Arrive>
+                  ) : null}
+                  <CrossFade contentKey={isTodayDone ? 'done' : 'pending'}>
+                    {isTodayDone ? (
+                      <View style={styles.doneRow}>
+                        <PopIn>
+                          <CircleCheck color={colors.status.lucid} size={20} strokeWidth={1.5} />
+                        </PopIn>
+                        <Text style={[typography.bodyMedium, styles.doneText]}>Completed today</Text>
+                        <AnimatedPressable onPress={handleToggleToday} hitSlop={10} disabled={busy}>
+                          <Text style={[typography.label, styles.undoLink]}>Undo</Text>
+                        </AnimatedPressable>
+                      </View>
+                    ) : (
+                      <Button label="Mark day complete" onPress={handleToggleToday} loading={busy} />
+                    )}
+                  </CrossFade>
+                </Card>
+              </Arrive>
+            ) : null}
+
+            <View style={styles.list}>
+              {TRACK_DAYS.map((trackDay, index) => (
+                <Arrive key={trackDay.day} delay={Math.min(index, 10) * 25}>
+                  <DayRow
+                    day={trackDay.day}
+                    title={trackDay.title}
+                    isCurrent={trackDay.day === currentDay}
+                    isDone={completedDays.has(trackDay.day)}
+                    isFuture={currentDay !== null && trackDay.day > currentDay}
+                  />
+                </Arrive>
+              ))}
+            </View>
+          </ScrollView>
+        )}
+
+        {error ? (
+          <Arrive from="down" style={[styles.footerError, { paddingBottom: spacing.sm + insets.bottom }]}>
+            <Text style={[typography.label, styles.errorText]}>{error}</Text>
+          </Arrive>
+        ) : null}
+      </Panel>
     </ScreenContainer>
   );
 }
@@ -205,6 +216,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
+    paddingHorizontal: spacing.screenPadding,
     gap: spacing.sm,
   },
   headerText: {
@@ -227,6 +239,7 @@ const styles = StyleSheet.create({
   introWrap: {
     flex: 1,
     justifyContent: 'center',
+    paddingHorizontal: spacing.screenPadding,
     gap: spacing.lg,
   },
   introCard: {
@@ -239,6 +252,7 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   scroll: {
+    paddingHorizontal: spacing.screenPadding,
     paddingTop: spacing.md,
     paddingBottom: spacing.xxl,
     gap: spacing.lg,
@@ -328,5 +342,9 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#F87171',
+  },
+  footerError: {
+    paddingHorizontal: spacing.screenPadding,
+    paddingTop: spacing.sm,
   },
 });

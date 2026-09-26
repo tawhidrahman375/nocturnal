@@ -7,7 +7,21 @@ import { spacing } from '../theme';
 type ScreenContainerProps = PropsWithChildren<{
   style?: ViewStyle;
   edges?: Edge[];
+  // Off by default — only the pre-auth/onboarding flow opts in (see DESIGN.md
+  // section 1's atmosphere note). Main-tab and setup screens stay flat.
   glow?: boolean;
+  // Overrides for the handful of screens that want a differently shaped/sized
+  // bloom rather than just toggling the shared default on.
+  glowCy?: string;
+  glowRx?: string;
+  glowRy?: string;
+  glowOpacity?: number;
+  // Opt-in for screens adopting DESIGN.md §4's single full-bleed Panel: the panel
+  // needs to span edge-to-edge, so this omits the ambient horizontal padding that
+  // every other screen still gets automatically. Screens that set this must apply
+  // `spacing.screenPadding` themselves to anything living outside the Panel (the
+  // title row, floating controls, full-bleed empty states).
+  edgeToEdge?: boolean;
 }>;
 
 // Near-black floor the radial bloom fades into — DESIGN.md section 1's "awake at 3am"
@@ -20,7 +34,17 @@ const FLOOR_COLOR = '#0A0B1A';
 // breaks up banding instead of any shadow/elevation. A pooled radial bloom behind the
 // screen's heading, muted charcoal-navy at its core (not vivid purple), falling to
 // FLOOR_COLOR by the lower third — not a uniform linear wash.
-function Atmosphere() {
+function Atmosphere({
+  cy = '22%',
+  rx = '90%',
+  ry = '46%',
+  opacity = 1,
+}: {
+  cy?: string;
+  rx?: string;
+  ry?: string;
+  opacity?: number;
+}) {
   // Ids must be unique per mounted screen, or web resolves every url() to the first one.
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const glowId = `glow${uid}`;
@@ -29,7 +53,7 @@ function Atmosphere() {
   return (
     <Svg width="100%" height="100%" style={styles.atmosphere} pointerEvents="none">
       <Defs>
-        <RadialGradient id={glowId} cx="50%" cy="22%" rx="90%" ry="46%">
+        <RadialGradient id={glowId} cx="50%" cy={cy} rx={rx} ry={ry}>
           <Stop offset="0" stopColor="#2A3152" stopOpacity={1} />
           <Stop offset="0.5" stopColor="#161B30" stopOpacity={1} />
           <Stop offset="1" stopColor={FLOOR_COLOR} stopOpacity={1} />
@@ -42,7 +66,7 @@ function Atmosphere() {
           <Circle cx={3.5} cy={3.5} r={0.5} fill="#FFFFFF" />
         </Pattern>
       </Defs>
-      <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${glowId})`} />
+      <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${glowId})`} opacity={opacity} />
       <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${grainId})`} opacity={0.04} />
     </Svg>
   );
@@ -52,12 +76,20 @@ export function ScreenContainer({
   children,
   style,
   edges = ['top', 'bottom'],
-  glow = true,
+  glow = false,
+  glowCy,
+  glowRx,
+  glowRy,
+  glowOpacity,
+  edgeToEdge = false,
 }: ScreenContainerProps) {
   return (
     <View style={styles.root}>
-      {glow ? <Atmosphere /> : null}
-      <SafeAreaView edges={edges} style={[styles.safeArea, style]}>
+      {glow ? <Atmosphere cy={glowCy} rx={glowRx} ry={glowRy} opacity={glowOpacity} /> : null}
+      <SafeAreaView
+        edges={edges}
+        style={[styles.safeArea, edgeToEdge && styles.safeAreaEdgeToEdge, style]}
+      >
         {children}
       </SafeAreaView>
     </View>
@@ -79,5 +111,8 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     paddingHorizontal: spacing.screenPadding,
+  },
+  safeAreaEdgeToEdge: {
+    paddingHorizontal: 0,
   },
 });

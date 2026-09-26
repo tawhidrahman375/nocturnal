@@ -2,11 +2,13 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Moon, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { Arrive } from '../../components/Arrive';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { ChipGroup } from '../../components/ChipGroup';
+import { Panel } from '../../components/Panel';
 import { PrePermissionModal } from '../../components/PrePermissionModal';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { TimeStepper } from '../../components/TimeStepper';
@@ -62,6 +64,10 @@ export function WbtbSetupScreen({ navigation, route }: Props) {
   const [permissionBlocked, setPermissionBlocked] = useState(false);
   const alarmPermission = usePrePermissionGate('wbtb-alarm', requestAlarmPermission);
   const [hasAppliedNaturalWakeTime, setHasAppliedNaturalWakeTime] = useState(false);
+  // ScreenContainer only reserves the top safe-area inset here (edges={['top']}), so
+  // the Panel — and the fixed footer living inside it — can bleed to the literal
+  // screen bottom per DESIGN.md §4; the bottom inset is added to the footer by hand.
+  const insets = useSafeAreaInsets();
 
   // Defaults the bedtime picker so the alarm lands on the user's own natural wake
   // time (from onboarding) instead of the generic "round up from now" default —
@@ -101,7 +107,7 @@ export function WbtbSetupScreen({ navigation, route }: Props) {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenContainer edges={['top']} edgeToEdge>
       <View style={styles.header}>
         <View style={styles.headerText}>
           <Text style={[typography.label, styles.eyebrow]}>Wake Back To Bed</Text>
@@ -119,99 +125,101 @@ export function WbtbSetupScreen({ navigation, route }: Props) {
         </AnimatedPressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Arrive>
-          <View style={styles.section}>
-            <Text style={[typography.label, styles.sectionLabel]}>Going to sleep at</Text>
-            <TimeStepper
-              value={sleepAt}
-              onChange={setSleepAt}
-              min={addMinutes(now, -120)}
-              max={addMinutes(now, 23 * 60)}
-            />
-          </View>
-        </Arrive>
-
-        <Arrive delay={50}>
-          <View style={styles.section}>
-            <Text style={[typography.label, styles.sectionLabel]}>Sleep before waking</Text>
-            <ChipGroup
-              options={SLEEP_DURATION_OPTIONS}
-              value={sleepMinutes}
-              onChange={setSleepMinutes}
-              format={formatDuration}
-            />
-            <Text style={[typography.label, styles.caption]}>
-              6h is recommended. It lands late in your fourth sleep cycle, when REM periods run
-              longest and dreams are easiest to recall.
-            </Text>
-          </View>
-        </Arrive>
-
-        <Arrive delay={100}>
-          <View style={styles.section}>
-            <Text style={[typography.label, styles.sectionLabel]}>Wake window</Text>
-            <ChipGroup
-              options={WAKE_WINDOW_OPTIONS}
-              value={wakeWindowMinutes}
-              onChange={setWakeWindowMinutes}
-              format={(m) => `${m} min`}
-            />
-            <Text style={[typography.label, styles.caption]}>
-              Long enough to wake your mind, short enough to slip back into REM.
-            </Text>
-          </View>
-        </Arrive>
-
-        <Arrive delay={150}>
-          <View style={styles.section}>
-            <Text style={[typography.label, styles.sectionLabel]}>Technique</Text>
-            <ChipGroup
-              options={TECHNIQUE_OPTIONS}
-              value={technique}
-              onChange={setTechnique}
-              format={(t) => TECHNIQUE_LABELS[t]}
-            />
-            <Text style={[typography.label, styles.caption]}>{TECHNIQUE_DESCRIPTIONS[technique]}</Text>
-          </View>
-        </Arrive>
-
-        <Arrive delay={200}>
-          <Card style={styles.timeline}>
-            <TimelineRow label="Sleep" time={formatTime(sleepAt)} />
-            <TimelineRow label="Alarm" time={formatTime(wakeAt)} highlight />
-            <TimelineRow label="Back to sleep" time={`~${formatTime(backToSleepAt)}`} last />
-          </Card>
-        </Arrive>
-      </ScrollView>
-
-      <View style={styles.footer}>
-        {permissionBlocked ? (
-          <Arrive from="down" style={styles.notice}>
-            <Text style={[typography.label, styles.errorText]}>
-              Notifications are off, so your alarm can&apos;t ring.
-            </Text>
-            <AnimatedPressable onPress={() => Linking.openSettings()} hitSlop={8}>
-              <Text style={[typography.label, styles.link]}>Open settings</Text>
-            </AnimatedPressable>
+      <Panel>
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          <Arrive>
+            <View style={styles.section}>
+              <Text style={[typography.label, styles.sectionLabel]}>Going to sleep at</Text>
+              <TimeStepper
+                value={sleepAt}
+                onChange={setSleepAt}
+                min={addMinutes(now, -120)}
+                max={addMinutes(now, 23 * 60)}
+              />
+            </View>
           </Arrive>
-        ) : null}
-        {error ? (
-          <Arrive from="down">
-            <Text style={[typography.label, styles.errorText]}>{error}</Text>
+
+          <Arrive delay={50}>
+            <View style={styles.section}>
+              <Text style={[typography.label, styles.sectionLabel]}>Sleep before waking</Text>
+              <ChipGroup
+                options={SLEEP_DURATION_OPTIONS}
+                value={sleepMinutes}
+                onChange={setSleepMinutes}
+                format={formatDuration}
+              />
+              <Text style={[typography.label, styles.caption]}>
+                6h is recommended. It lands late in your fourth sleep cycle, when REM periods run
+                longest and dreams are easiest to recall.
+              </Text>
+            </View>
           </Arrive>
-        ) : null}
-        {!notificationsSupported ? (
-          <Text style={[typography.label, styles.caption]}>
-            Alarms only ring in the iOS and Android apps. Your session will still be saved.
-          </Text>
-        ) : null}
-        <Button
-          label={`Set alarm for ${formatTime(wakeAt)}`}
-          onPress={handleSetAlarm}
-          loading={saving}
-        />
-      </View>
+
+          <Arrive delay={100}>
+            <View style={styles.section}>
+              <Text style={[typography.label, styles.sectionLabel]}>Wake window</Text>
+              <ChipGroup
+                options={WAKE_WINDOW_OPTIONS}
+                value={wakeWindowMinutes}
+                onChange={setWakeWindowMinutes}
+                format={(m) => `${m} min`}
+              />
+              <Text style={[typography.label, styles.caption]}>
+                Long enough to wake your mind, short enough to slip back into REM.
+              </Text>
+            </View>
+          </Arrive>
+
+          <Arrive delay={150}>
+            <View style={styles.section}>
+              <Text style={[typography.label, styles.sectionLabel]}>Technique</Text>
+              <ChipGroup
+                options={TECHNIQUE_OPTIONS}
+                value={technique}
+                onChange={setTechnique}
+                format={(t) => TECHNIQUE_LABELS[t]}
+              />
+              <Text style={[typography.label, styles.caption]}>{TECHNIQUE_DESCRIPTIONS[technique]}</Text>
+            </View>
+          </Arrive>
+
+          <Arrive delay={200}>
+            <Card style={styles.timeline}>
+              <TimelineRow label="Sleep" time={formatTime(sleepAt)} />
+              <TimelineRow label="Alarm" time={formatTime(wakeAt)} highlight />
+              <TimelineRow label="Back to sleep" time={`~${formatTime(backToSleepAt)}`} last />
+            </Card>
+          </Arrive>
+        </ScrollView>
+
+        <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
+          {permissionBlocked ? (
+            <Arrive from="down" style={styles.notice}>
+              <Text style={[typography.label, styles.errorText]}>
+                Notifications are off, so your alarm can&apos;t ring.
+              </Text>
+              <AnimatedPressable onPress={() => Linking.openSettings()} hitSlop={8}>
+                <Text style={[typography.label, styles.link]}>Open settings</Text>
+              </AnimatedPressable>
+            </Arrive>
+          ) : null}
+          {error ? (
+            <Arrive from="down">
+              <Text style={[typography.label, styles.errorText]}>{error}</Text>
+            </Arrive>
+          ) : null}
+          {!notificationsSupported ? (
+            <Text style={[typography.label, styles.caption]}>
+              Alarms only ring in the iOS and Android apps. Your session will still be saved.
+            </Text>
+          ) : null}
+          <Button
+            label={`Set alarm for ${formatTime(wakeAt)}`}
+            onPress={handleSetAlarm}
+            loading={saving}
+          />
+        </View>
+      </Panel>
 
       <PrePermissionModal
         visible={alarmPermission.visible}
@@ -270,6 +278,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
+    paddingHorizontal: spacing.screenPadding,
   },
   headerText: {
     gap: spacing.xs / 2,
@@ -283,6 +292,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   scroll: {
+    paddingHorizontal: spacing.screenPadding,
     paddingTop: spacing.lg,
     paddingBottom: spacing.lg,
     gap: spacing.xl,
@@ -350,6 +360,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     gap: spacing.sm,
+    paddingHorizontal: spacing.screenPadding,
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
   },

@@ -7,6 +7,7 @@ import { Card } from '../../components/Card';
 import { DreamSignRevealOverlay } from '../../components/DreamSignRevealOverlay';
 import { MilestoneOverlay } from '../../components/MilestoneOverlay';
 import { NewDreamSheet } from '../../components/NewDreamSheet';
+import { Panel } from '../../components/Panel';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { useAuth } from '../../hooks/useAuth';
 import { Dream, useDreams } from '../../hooks/useDreams';
@@ -65,7 +66,7 @@ export function JournalScreen() {
   };
 
   return (
-    <ScreenContainer edges={['top']}>
+    <ScreenContainer edges={['top']} edgeToEdge>
       <Arrive style={styles.header}>
         <Text style={[typography.heroTitle, styles.title]}>Journal</Text>
         <Pressable style={styles.addButton} onPress={openSheet} hitSlop={8}>
@@ -76,19 +77,21 @@ export function JournalScreen() {
       {dreams.length === 0 ? (
         <JournalEmptyState onRecord={openSheet} />
       ) : (
-        <Arrive delay={40} style={styles.listWrap}>
-          <SectionList
-            sections={sections}
-            keyExtractor={(item) => item.id}
-            stickySectionHeadersEnabled={false}
-            contentContainerStyle={styles.list}
-            showsVerticalScrollIndicator={false}
-            renderSectionHeader={({ section }) => (
-              <Text style={[typography.label, styles.sectionHeader]}>{section.title}</Text>
-            )}
-            renderItem={({ item }) => <DreamRow dream={item} />}
-          />
-        </Arrive>
+        <Panel>
+          <Arrive delay={40} style={styles.listWrap}>
+            <SectionList
+              sections={sections}
+              keyExtractor={(item) => item.id}
+              stickySectionHeadersEnabled={false}
+              contentContainerStyle={styles.list}
+              showsVerticalScrollIndicator={false}
+              renderSectionHeader={({ section }) => (
+                <Text style={[typography.label, styles.sectionHeader]}>{section.title}</Text>
+              )}
+              renderItem={({ item }) => <DreamRow dream={item} />}
+            />
+          </Arrive>
+        </Panel>
       )}
 
       <NewDreamSheet
@@ -166,6 +169,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: spacing.md,
     paddingBottom: spacing.md,
+    paddingHorizontal: spacing.screenPadding,
   },
   title: {
     color: colors.text.primary,
@@ -182,12 +186,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   list: {
+    paddingHorizontal: spacing.screenPadding,
+    paddingTop: spacing.lg,
     gap: spacing.sm,
     paddingBottom: spacing.tabBarClearance,
   },
   emptyWrap: {
     flex: 1,
     justifyContent: 'center',
+    paddingHorizontal: spacing.screenPadding,
     paddingBottom: spacing.tabBarClearance,
     gap: spacing.md,
   },
