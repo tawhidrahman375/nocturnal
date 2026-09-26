@@ -24,6 +24,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
     borderRadius: radius.card,
     padding: spacing.cardPadding,
+    // Backstops the fill against NightSky (src/components/NightSky.tsx): a relative
+    // white-lighten reads fine on the old flat panel but can flatten out against the
+    // lighter end of that gradient, so a hairline border keeps the edge legible
+    // regardless of what's behind it.
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
   },
   elevated: {
     backgroundColor: colors.surface.cardElevated,

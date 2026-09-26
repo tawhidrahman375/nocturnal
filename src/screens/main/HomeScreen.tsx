@@ -7,7 +7,7 @@ import { Arrive } from '../../components/Arrive';
 import { BeginnerTrackCard } from '../../components/BeginnerTrackCard';
 import { Card } from '../../components/Card';
 import { MilestoneOverlay } from '../../components/MilestoneOverlay';
-import { Panel } from '../../components/Panel';
+import { NightSky } from '../../components/NightSky';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { TonightRoutineCard } from '../../components/TonightRoutineCard';
 import { WbtbCard } from '../../components/WbtbCard';
@@ -46,67 +46,73 @@ export function HomeScreen() {
 
   return (
     <ScreenContainer edges={['top']} edgeToEdge>
-      <Arrive style={styles.header}>
-        <Text style={[typography.label, styles.eyebrow]}>Welcome back</Text>
-        <Text style={[typography.heroTitle, styles.name]}>{greetingName}</Text>
-      </Arrive>
-
-      <Panel>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <Arrive delay={40}>
-            <WbtbCard />
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <NightSky intensity="full" style={styles.sky}>
+          <Arrive style={styles.header}>
+            <Text style={[typography.label, styles.eyebrow]}>Welcome back</Text>
+            <Text style={[typography.heroTitle, styles.name]}>{greetingName}</Text>
           </Arrive>
 
-          <Arrive delay={80}>
-            <BeginnerTrackCard />
-          </Arrive>
+          <View style={styles.body}>
+            <Arrive delay={40}>
+              <WbtbCard />
+            </Arrive>
 
-          <Arrive delay={120} style={styles.statsRow}>
-            <BareStat
-              icon={Flame}
-              value={profile?.current_streak ?? 0}
-              label="Day streak"
-              tint={colors.status.lucid}
-            />
-            <BareStat icon={Moon} value={dreams.length} label="Dreams logged" tint={colors.accent.primary} />
-            <BareStat icon={Sparkles} value={lucidDreams} label="Lucid" tint={colors.text.secondary} />
-          </Arrive>
+            <Arrive delay={80}>
+              <BeginnerTrackCard />
+            </Arrive>
 
-          <Arrive delay={160}>
-            <TonightRoutineCard dreams={dreams} mildIntentionSetAt={profile?.mild_intention_set_at ?? null} />
-          </Arrive>
+            <Arrive delay={120} style={styles.statsRow}>
+              <BareStat
+                icon={Flame}
+                value={profile?.current_streak ?? 0}
+                label="Day streak"
+                tint={colors.status.lucid}
+              />
+              <BareStat icon={Moon} value={dreams.length} label="Dreams logged" tint={colors.accent.primary} />
+              <BareStat icon={Sparkles} value={lucidDreams} label="Lucid" tint={colors.text.secondary} />
+            </Arrive>
 
-          <Arrive delay={200} style={styles.section}>
-            <Text style={[typography.heading, styles.sectionTitle]}>Recent dreams</Text>
-            {recentDreams.length === 0 ? (
-              <Card>
-                <View style={styles.emptyRow}>
-                  <PenLine color={colors.text.tertiary} size={18} strokeWidth={1.5} />
-                  <Text style={[typography.body, styles.emptyText]}>
-                    Nothing logged yet. Tonight&apos;s dream is still unwritten.
-                  </Text>
-                </View>
-              </Card>
-            ) : (
-              recentDreams.map((dream) => (
-                <Card key={dream.id} style={styles.dreamCard}>
-                  <View style={styles.dreamCardHeader}>
-                    <Text style={[typography.bodyMedium, styles.dreamTitle]} numberOfLines={1}>
-                      {dream.title}
+            <Arrive delay={160}>
+              <TonightRoutineCard dreams={dreams} mildIntentionSetAt={profile?.mild_intention_set_at ?? null} />
+            </Arrive>
+
+            <Arrive delay={200} style={styles.section}>
+              <Text style={[typography.heading, styles.sectionTitle]}>Recent dreams</Text>
+              {recentDreams.length === 0 ? (
+                <Card>
+                  <View style={styles.emptyRow}>
+                    <PenLine color={colors.text.tertiary} size={18} strokeWidth={1.5} />
+                    <Text style={[typography.body, styles.emptyText]}>
+                      Nothing logged yet. Tonight&apos;s dream is still unwritten.
                     </Text>
-                    {dream.is_lucid ? (
-                      <View style={styles.lucidBadge}>
-                        <Text style={[typography.caption, styles.lucidBadgeText]}>Lucid</Text>
-                      </View>
-                    ) : null}
                   </View>
-                  <Text style={[typography.caption, styles.dreamDate]}>{dream.dreamed_at}</Text>
                 </Card>
-              ))
-            )}
-          </Arrive>
-        </ScrollView>
-      </Panel>
+              ) : (
+                recentDreams.map((dream) => (
+                  <Card key={dream.id} style={styles.dreamCard}>
+                    <View style={styles.dreamCardHeader}>
+                      <Text style={[typography.bodyMedium, styles.dreamTitle]} numberOfLines={1}>
+                        {dream.title}
+                      </Text>
+                      {dream.is_lucid ? (
+                        <View style={styles.lucidBadge}>
+                          <Text style={[typography.caption, styles.lucidBadgeText]}>Lucid</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    <Text style={[typography.caption, styles.dreamDate]}>{dream.dreamed_at}</Text>
+                  </Card>
+                ))
+              )}
+            </Arrive>
+          </View>
+        </NightSky>
+      </ScrollView>
 
       <MilestoneOverlay milestone={milestone} visible={milestone !== null} onDismiss={handleMilestoneDismiss} />
     </ScreenContainer>
@@ -135,7 +141,19 @@ function BareStat({
 }
 
 const styles = StyleSheet.create({
-  scroll: {
+  scrollView: {
+    flex: 1,
+  },
+  // flexGrow (not flex) so NightSky still stretches to the screen's bottom edge when
+  // content is shorter than the viewport, without fighting the ScrollView's own
+  // scrolling once content grows taller than it.
+  scrollContent: {
+    flexGrow: 1,
+  },
+  sky: {
+    flex: 1,
+  },
+  body: {
     paddingHorizontal: spacing.screenPadding,
     paddingTop: spacing.lg,
     paddingBottom: spacing.tabBarClearance,

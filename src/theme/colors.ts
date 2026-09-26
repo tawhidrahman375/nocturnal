@@ -19,6 +19,13 @@ export const colors = {
     primaryMuted: 'rgba(108, 142, 255, 0.14)',
     primaryBorder: 'rgba(108, 142, 255, 0.32)',
   },
+  // Gradient stops for the NightSky background (src/components/NightSky.tsx), not a
+  // general-purpose surface/accent — used only behind hero content.
+  nightSky: {
+    deep: '#0D0B2B',
+    mid: '#1A1550',
+    glow: 'rgba(108, 142, 255, 0.25)',
+  },
   status: {
     lucid: '#34D399',
     lucidMuted: 'rgba(52, 211, 153, 0.12)',
