@@ -314,8 +314,6 @@ const styles = StyleSheet.create({
   },
   dayRowCurrent: {
     backgroundColor: 'rgba(108, 142, 255, 0.1)',
-    borderWidth: 1,
-    borderColor: colors.accent.primary,
   },
   dayRowFuture: {
     opacity: 0.5,

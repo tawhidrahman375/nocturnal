@@ -36,7 +36,7 @@ export function InsightsScreen() {
           icon={Waves}
           title="Nothing to trace yet."
           message="A pattern needs more than one night. Keep logging, and it will surface."
-          tint={colors.accent.secondary}
+          tint={colors.text.secondary}
           action={{ label: 'Log a dream', onPress: () => navigation.navigate('Journal') }}
         />
       ) : (

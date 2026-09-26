@@ -7,12 +7,6 @@ import { useTonightRoutine } from '../hooks/useTonightRoutine';
 import { Dream } from '../hooks/useDreams';
 import { colors, radius, spacing, typography } from '../theme';
 
-// Not in the shared palette (theme/colors.ts) on purpose — this warm gold is a one-off
-// "routine complete" accent, distinct from the app's blue/purple accent pair, so it isn't
-// promoted to a shared token until something else needs it.
-const GOLD = '#E8B95C';
-const GOLD_GLOW = 'rgba(232, 185, 92, 0.45)';
-
 type TonightRoutineCardProps = {
   dreams: Pick<Dream, 'created_at'>[];
   mildIntentionSetAt: string | null;
@@ -29,8 +23,8 @@ export function TonightRoutineCard({ dreams, mildIntentionSetAt }: TonightRoutin
   const { steps, completedCount, isComplete } = useTonightRoutine(dreams, mildIntentionSetAt);
 
   const ring = (
-    <View style={[styles.ringWrap, isComplete && styles.ringGlow]}>
-      <ProgressRing size={72} strokeWidth={7} progress={completedCount / 4} color={isComplete ? GOLD : colors.accent.primary}>
+    <View style={styles.ringWrap}>
+      <ProgressRing size={72} strokeWidth={7} progress={completedCount / 4} color={colors.accent.primary}>
         <Text style={[typography.bodyMedium, styles.ringLabel, isComplete && styles.ringLabelComplete]}>
           {completedCount}/4
         </Text>
@@ -82,18 +76,11 @@ const styles = StyleSheet.create({
   ringWrap: {
     borderRadius: radius.pill,
   },
-  ringGlow: {
-    shadowColor: GOLD_GLOW,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 14,
-    elevation: 8,
-  },
   ringLabel: {
     color: colors.text.primary,
   },
   ringLabelComplete: {
-    color: GOLD,
+    color: colors.accent.primary,
   },
   steps: {
     flex: 1,

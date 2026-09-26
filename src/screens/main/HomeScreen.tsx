@@ -69,7 +69,7 @@ export function HomeScreen() {
               tint={colors.status.lucid}
             />
             <BareStat icon={Moon} value={dreams.length} label="Dreams logged" tint={colors.accent.primary} />
-            <BareStat icon={Sparkles} value={lucidDreams} label="Lucid" tint={colors.accent.secondary} />
+            <BareStat icon={Sparkles} value={lucidDreams} label="Lucid" tint={colors.text.secondary} />
           </Arrive>
 
           <Arrive delay={160}>
