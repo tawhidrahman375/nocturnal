@@ -165,9 +165,26 @@ state changes still register but nothing slides, scales, overshoots, or drifts. 
 reduced motion, Ambient's drifting halo freezes at its brightest state instead of
 looping.
 
+`NightSky` (`src/components/NightSky.tsx`, the background behind Home/Journal/
+Insights/Profile) extends Ambient into a small composite background system rather than
+inventing an unrelated ninth token — a star is still just an Ambient opacity loop
+(`EASE_AMBIENT`, `DURATIONS.ambient`), staggered per star so they don't pulse in unison:
+- **Drift** — the star field scrolls left continuously (~14px/s, `Easing.linear`, no
+  start/end) by rendering two copies side by side and animating both from x=0 to
+  x=-width on an exact loop, so the wrap is invisible.
+- **Breathe** — the gradient's two color stops slowly mix toward a slightly different
+  point in the same indigo/purple range and back, on a ~24s cycle. Runs on the JS
+  thread (color isn't a native-driver-eligible property) but is throttled to ~7fps,
+  since a shift this slow doesn't need 60fps to read as smooth.
+Both freeze under reduced motion — drift holds at x=0, breathe holds at its base
+colors — same as Ambient's own halo freezing at its brightest state. Breathe is
+`full`-intensity only; `subtle`'s smaller, tighter-gradient usages don't have the room
+for it to read as anything but noise.
+
 Shared building blocks: `src/lib/motion.ts` (the constants above), `src/components/
 Arrive.tsx` (entrance wrapper), `src/components/CrossFade.tsx` (state-swap wrapper, plus
 the stage-slide variant), `src/components/AnimatedPressable.tsx` (Micro/Release press
 feedback, drop-in for `Pressable`), `src/components/Breathing.tsx` (opacity-loop
 primitive backing Ambient, also used for pre-Ambient atmospheric touches like the
-AlarmStage clock halo), `src/components/PopIn.tsx` (Pop wrapper).
+AlarmStage clock halo), `src/components/PopIn.tsx` (Pop wrapper), `src/components/
+NightSky.tsx` (the star-drift/twinkle/breathing background above).
