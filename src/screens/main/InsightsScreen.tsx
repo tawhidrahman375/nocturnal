@@ -5,7 +5,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Arrive } from '../../components/Arrive';
 import { Card } from '../../components/Card';
 import { EmptyState } from '../../components/EmptyState';
-import { Panel } from '../../components/Panel';
+import { NightSky } from '../../components/NightSky';
 import { ProgressRing } from '../../components/ProgressRing';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { StatPill } from '../../components/StatPill';
@@ -27,20 +27,20 @@ export function InsightsScreen() {
 
   return (
     <ScreenContainer edges={['top']} edgeToEdge>
-      <View style={styles.header}>
-        <Text style={[typography.heroTitle, styles.title]}>Insights</Text>
-      </View>
+      <NightSky intensity="subtle" style={styles.sky}>
+        <View style={styles.header}>
+          <Text style={[typography.heroTitle, styles.title]}>Insights</Text>
+        </View>
 
-      {totalDreams === 0 ? (
-        <EmptyState
-          icon={Waves}
-          title="Nothing to trace yet."
-          message="A pattern needs more than one night. Keep logging, and it will surface."
-          tint={colors.text.secondary}
-          action={{ label: 'Log a dream', onPress: () => navigation.navigate('Journal') }}
-        />
-      ) : (
-        <Panel>
+        {totalDreams === 0 ? (
+          <EmptyState
+            icon={Waves}
+            title="Nothing to trace yet."
+            message="A pattern needs more than one night. Keep logging, and it will surface."
+            tint={colors.text.secondary}
+            action={{ label: 'Log a dream', onPress: () => navigation.navigate('Journal') }}
+          />
+        ) : (
           <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
             <Arrive>
               <Card style={styles.heroCard} elevated>
@@ -60,13 +60,16 @@ export function InsightsScreen() {
               <StatPill icon={Moon} value={totalDreams} label="Logged" tint={colors.text.secondary} />
             </Arrive>
           </ScrollView>
-        </Panel>
-      )}
+        )}
+      </NightSky>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
+  sky: {
+    flex: 1,
+  },
   header: {
     paddingTop: spacing.md,
     paddingBottom: spacing.md,

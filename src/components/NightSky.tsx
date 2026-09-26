@@ -8,9 +8,15 @@ type Intensity = 'subtle' | 'full';
 type NightSkyProps = PropsWithChildren<{
   intensity?: Intensity;
   style?: ViewStyle;
+  // For a content-sized usage (no `style` height override) that ends abruptly above a
+  // differently-colored sibling — e.g. Profile's hero block sitting directly on Panel —
+  // this feathers the bottom edge toward background.primary instead of a hard cut.
+  edgeFade?: boolean;
 }>;
 
 type Star = { x: number; y: number; size: number; opacity: number };
+
+const EDGE_FADE_HEIGHT = 48;
 
 // Star count scales with the container's own measured height (DESIGN.md §8: density
 // should scale with screen area, not be fixed-count) so a short header panel and a
@@ -67,7 +73,7 @@ function starCountForHeight(intensity: Intensity, height: number) {
   return Math.min(MAX_STARS[intensity], Math.max(MIN_STARS[intensity], scaled));
 }
 
-export function NightSky({ children, intensity = 'full', style }: NightSkyProps) {
+export function NightSky({ children, intensity = 'full', style, edgeFade = false }: NightSkyProps) {
   const [height, setHeight] = useState(0);
   const { start, end } = GRADIENT_SPAN[intensity];
 
@@ -109,6 +115,13 @@ export function NightSky({ children, intensity = 'full', style }: NightSkyProps)
         ))}
       </View>
       <View style={styles.content}>{children}</View>
+      {edgeFade ? (
+        <LinearGradient
+          pointerEvents="none"
+          colors={['transparent', colors.background.primary]}
+          style={styles.edgeFade}
+        />
+      ) : null}
     </View>
   );
 }
@@ -122,8 +135,19 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: '#FFFFFF',
   },
+  // flex: 1 so a caller-provided `style={{ flex: 1 }}` on the container (a full-screen
+  // usage) reaches children that themselves need to stretch/center in the available
+  // height (e.g. Journal's empty state). The gradient/star layers don't depend on this
+  // — they're absolute siblings sized to `container` directly — so a header-only usage
+  // with no `style` override is unaffected; content just hugs its natural size as before.
   content: {
-    // Sizes the container via normal flow — the gradient/stars above are absolute
-    // siblings that stretch to match whatever height this content ends up with.
+    flex: 1,
+  },
+  edgeFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: EDGE_FADE_HEIGHT,
   },
 });

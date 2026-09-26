@@ -7,7 +7,7 @@ import { Card } from '../../components/Card';
 import { DreamSignRevealOverlay } from '../../components/DreamSignRevealOverlay';
 import { MilestoneOverlay } from '../../components/MilestoneOverlay';
 import { NewDreamSheet } from '../../components/NewDreamSheet';
-import { Panel } from '../../components/Panel';
+import { NightSky } from '../../components/NightSky';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { useAuth } from '../../hooks/useAuth';
 import { Dream, useDreams } from '../../hooks/useDreams';
@@ -67,17 +67,17 @@ export function JournalScreen() {
 
   return (
     <ScreenContainer edges={['top']} edgeToEdge>
-      <Arrive style={styles.header}>
-        <Text style={[typography.heroTitle, styles.title]}>Journal</Text>
-        <Pressable style={styles.addButton} onPress={openSheet} hitSlop={8}>
-          <Plus color="#FFFFFF" size={22} strokeWidth={2} />
-        </Pressable>
-      </Arrive>
+      <NightSky intensity="subtle" style={styles.sky}>
+        <Arrive style={styles.header}>
+          <Text style={[typography.heroTitle, styles.title]}>Journal</Text>
+          <Pressable style={styles.addButton} onPress={openSheet} hitSlop={8}>
+            <Plus color="#FFFFFF" size={22} strokeWidth={2} />
+          </Pressable>
+        </Arrive>
 
-      {dreams.length === 0 ? (
-        <JournalEmptyState onRecord={openSheet} />
-      ) : (
-        <Panel>
+        {dreams.length === 0 ? (
+          <JournalEmptyState onRecord={openSheet} />
+        ) : (
           <Arrive delay={40} style={styles.listWrap}>
             <SectionList
               sections={sections}
@@ -91,8 +91,8 @@ export function JournalScreen() {
               renderItem={({ item }) => <DreamRow dream={item} />}
             />
           </Arrive>
-        </Panel>
-      )}
+        )}
+      </NightSky>
 
       <NewDreamSheet
         visible={sheetVisible}
@@ -163,6 +163,9 @@ function DreamRow({ dream }: { dream: Dream }) {
 }
 
 const styles = StyleSheet.create({
+  sky: {
+    flex: 1,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

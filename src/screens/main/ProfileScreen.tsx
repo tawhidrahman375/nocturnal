@@ -20,6 +20,7 @@ import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { Arrive } from '../../components/Arrive';
 import { Card } from '../../components/Card';
 import { DeleteAccountModal } from '../../components/DeleteAccountModal';
+import { NightSky } from '../../components/NightSky';
 import { Panel } from '../../components/Panel';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { StatPill } from '../../components/StatPill';
@@ -110,12 +111,12 @@ export function ProfileScreen() {
 
   return (
     <ScreenContainer edges={['top']} edgeToEdge>
-      <Arrive style={styles.header}>
-        <Text style={[typography.heroTitle, styles.title]}>You</Text>
-      </Arrive>
+      <NightSky intensity="subtle" edgeFade>
+        <Arrive style={styles.header}>
+          <Text style={[typography.heroTitle, styles.title]}>You</Text>
+        </Arrive>
 
-      <Panel>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={styles.heroBlock}>
           <Arrive delay={40}>
             <Card style={styles.card}>
               <Text style={[typography.label, styles.label]}>Signed in as</Text>
@@ -128,7 +129,11 @@ export function ProfileScreen() {
             <StatPill icon={Flame} value={profile?.current_streak ?? 0} label="Day streak" tint={colors.accent.primary} />
             <StatPill icon={Moon} value={lucidDreams} label="Lucid" tint={colors.text.secondary} />
           </Arrive>
+        </View>
+      </NightSky>
 
+      <Panel>
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <Arrive delay={120}>
             <AnimatedPressable onPress={() => navigation.navigate('RealityCheckSetup')}>
               <Card style={styles.rowCard}>
@@ -219,6 +224,10 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.md,
     paddingHorizontal: spacing.screenPadding,
+  },
+  heroBlock: {
+    paddingHorizontal: spacing.screenPadding,
+    paddingTop: spacing.lg,
   },
   title: {
     color: colors.text.primary,
