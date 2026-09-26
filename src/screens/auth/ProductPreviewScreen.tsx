@@ -45,7 +45,7 @@ const EXAMPLE_DREAMS: ExampleDream[] = [
 
 export function ProductPreviewScreen({ navigation }: Props) {
   return (
-    <ScreenContainer>
+    <ScreenContainer glow>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}

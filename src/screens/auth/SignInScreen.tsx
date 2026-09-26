@@ -27,7 +27,7 @@ export function SignInScreen({ navigation }: Props) {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenContainer glow>
       <Arrive style={styles.content}>
         <View style={styles.header}>
           <Text style={[typography.displayMd, styles.title]}>Welcome back</Text>

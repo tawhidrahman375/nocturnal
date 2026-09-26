@@ -10,7 +10,7 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Welcome'>;
 
 export function WelcomeScreen({ navigation }: Props) {
   return (
-    <ScreenContainer>
+    <ScreenContainer glow>
       <View style={styles.content}>
         <Arrive style={styles.hero}>
           <Text style={[typography.displayLg, styles.title]}>Nocturnal</Text>

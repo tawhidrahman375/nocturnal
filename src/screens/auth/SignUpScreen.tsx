@@ -33,7 +33,7 @@ export function SignUpScreen({ navigation }: Props) {
 
   if (confirmationSent) {
     return (
-      <ScreenContainer>
+      <ScreenContainer glow>
         <Arrive style={styles.content}>
           <View style={styles.header}>
             <Text style={[typography.displayMd, styles.title]}>Check your email</Text>
@@ -48,7 +48,7 @@ export function SignUpScreen({ navigation }: Props) {
   }
 
   return (
-    <ScreenContainer>
+    <ScreenContainer glow>
       <Arrive style={styles.content}>
         <View style={styles.header}>
           <Text style={[typography.displayMd, styles.title]}>Create account</Text>

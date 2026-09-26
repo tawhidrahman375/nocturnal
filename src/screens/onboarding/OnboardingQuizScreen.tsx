@@ -102,7 +102,7 @@ export function OnboardingQuizScreen({ onComplete }: OnboardingQuizScreenProps) 
   }
 
   return (
-    <ScreenContainer>
+    <ScreenContainer glow>
       <QuizProgress activeSegments={step + 1} />
 
       <CrossFade contentKey={step} slidePx={STAGE_SLIDE_PX} style={styles.body}>
@@ -234,7 +234,7 @@ function OutcomeReveal({
   onDone: () => void;
 }) {
   return (
-    <ScreenContainer>
+    <ScreenContainer glow>
       <QuizProgress activeSegments={QUESTION_COUNT} />
 
       <CrossFade contentKey={phase} style={styles.outcomeBody}>
