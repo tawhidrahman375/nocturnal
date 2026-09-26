@@ -1,8 +1,9 @@
-import { Flame, Moon, PenLine } from 'lucide-react-native';
+import { Flame, LucideIcon, Moon, PenLine, Sparkles } from 'lucide-react-native';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BeginnerTrackCard } from '../../components/BeginnerTrackCard';
 import { Card } from '../../components/Card';
 import { ScreenContainer } from '../../components/ScreenContainer';
+import { TonightRoutineCard } from '../../components/TonightRoutineCard';
 import { WbtbCard } from '../../components/WbtbCard';
 import { useAuth } from '../../hooks/useAuth';
 import { useDreams } from '../../hooks/useDreams';
@@ -16,13 +17,14 @@ export function HomeScreen() {
 
   const greetingName = profile?.display_name || user?.email?.split('@')[0] || 'dreamer';
   const recentDreams = dreams.slice(0, 3);
+  const lucidDreams = dreams.filter((dream) => dream.is_lucid).length;
 
   return (
     <ScreenContainer edges={['top']}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={[typography.label, styles.eyebrow]}>Welcome back</Text>
-          <Text style={[typography.displayMd, styles.name]}>{greetingName}</Text>
+          <Text style={[typography.heroTitle, styles.name]}>{greetingName}</Text>
         </View>
 
         <WbtbCard />
@@ -30,19 +32,17 @@ export function HomeScreen() {
         <BeginnerTrackCard />
 
         <View style={styles.statsRow}>
-          <Card style={styles.statCard}>
-            <Flame color={colors.status.lucid} size={20} strokeWidth={1.5} />
-            <Text style={[typography.displayMd, styles.statValue]}>
-              {profile?.current_streak ?? 0}
-            </Text>
-            <Text style={[typography.caption, styles.statLabel]}>Day streak</Text>
-          </Card>
-          <Card style={styles.statCard}>
-            <Moon color={colors.accent.primary} size={20} strokeWidth={1.5} />
-            <Text style={[typography.displayMd, styles.statValue]}>{dreams.length}</Text>
-            <Text style={[typography.caption, styles.statLabel]}>Dreams logged</Text>
-          </Card>
+          <BareStat
+            icon={Flame}
+            value={profile?.current_streak ?? 0}
+            label="Day streak"
+            tint={colors.status.lucid}
+          />
+          <BareStat icon={Moon} value={dreams.length} label="Dreams logged" tint={colors.accent.primary} />
+          <BareStat icon={Sparkles} value={lucidDreams} label="Lucid" tint={colors.accent.secondary} />
         </View>
+
+        <TonightRoutineCard dreams={dreams} mildIntentionSetAt={profile?.mild_intention_set_at ?? null} />
 
         <View style={styles.section}>
           <Text style={[typography.heading, styles.sectionTitle]}>Recent dreams</Text>
@@ -51,7 +51,7 @@ export function HomeScreen() {
               <View style={styles.emptyRow}>
                 <PenLine color={colors.text.tertiary} size={18} strokeWidth={1.5} />
                 <Text style={[typography.body, styles.emptyText]}>
-                  Nothing logged yet. Head to Journal to record tonight&apos;s dream.
+                  Nothing logged yet. Tonight&apos;s dream is still unwritten.
                 </Text>
               </View>
             </Card>
@@ -78,10 +78,31 @@ export function HomeScreen() {
   );
 }
 
+// No pill, no border — a bare numeral is the whole point here, per Opal's profile stats.
+function BareStat({
+  icon: Icon,
+  value,
+  label,
+  tint,
+}: {
+  icon: LucideIcon;
+  value: number;
+  label: string;
+  tint: string;
+}) {
+  return (
+    <View style={styles.bareStat}>
+      <Icon color={tint} size={16} strokeWidth={1.75} />
+      <Text style={[typography.stat, styles.bareStatValue]}>{value}</Text>
+      <Text style={[typography.caption, styles.bareStatLabel]}>{label}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   scroll: {
     paddingTop: spacing.md,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.tabBarClearance,
     gap: spacing.lg,
   },
   header: {
@@ -98,17 +119,18 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    gap: spacing.md,
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.xs,
   },
-  statCard: {
-    flex: 1,
-    gap: spacing.xs,
+  bareStat: {
+    alignItems: 'center',
+    gap: 2,
   },
-  statValue: {
+  bareStatValue: {
     color: colors.text.primary,
   },
-  statLabel: {
-    color: colors.text.secondary,
+  bareStatLabel: {
+    color: colors.text.tertiary,
   },
   section: {
     gap: spacing.sm,

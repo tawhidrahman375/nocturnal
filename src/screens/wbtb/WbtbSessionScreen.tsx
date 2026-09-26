@@ -3,12 +3,15 @@ import { CloudOff } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button } from '../../components/Button';
+import { CrossFade } from '../../components/CrossFade';
 import { EmptyState } from '../../components/EmptyState';
 import { LoadingView } from '../../components/LoadingView';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { useAuth } from '../../hooks/useAuth';
+import { STAGE_SLIDE_PX } from '../../lib/motion';
 import { cancelAlarm, cancelWindowEnd, scheduleWindowEnd } from '../../lib/notifications';
-import { addMinutes, stageForSession, WbtbSession, WbtbStage } from '../../lib/wbtb';
+import { markMildIntentionSet } from '../../lib/tonightRoutine';
+import { addMinutes, stageForSession, WbtbSession, WbtbStage, WbtbTechnique } from '../../lib/wbtb';
 import {
   fetchSession,
   saveRecallToJournal,
@@ -22,7 +25,9 @@ import { AlarmStage } from './stages/AlarmStage';
 import { ClosedStage } from './stages/ClosedStage';
 import { MildStage } from './stages/MildStage';
 import { RecallStage } from './stages/RecallStage';
+import { SsildStage } from './stages/SsildStage';
 import { WakeWindowStage } from './stages/WakeWindowStage';
+import { WildStage } from './stages/WildStage';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'WbtbSession'>;
 
@@ -30,7 +35,13 @@ const STAGE_HEADERS: Record<Exclude<WbtbStage, 'closed'>, { label: string; step?
   alarm: { label: 'Wake Back To Bed' },
   recall: { label: 'Recall', step: 1 },
   window: { label: 'Wake window', step: 2 },
-  mild: { label: 'Return to sleep', step: 3 },
+  technique: { label: 'Return to sleep', step: 3 },
+};
+
+const TECHNIQUE_STAGES: Record<WbtbTechnique, typeof MildStage> = {
+  mild: MildStage,
+  wild: WildStage,
+  ssild: SsildStage,
 };
 
 export function WbtbSessionScreen({ route, navigation }: Props) {
@@ -125,27 +136,36 @@ export function WbtbSessionScreen({ route, navigation }: Props) {
   const handleEndWindow = () => {
     persist({ wake_window_ended_at: new Date().toISOString() });
     cancelWindowEnd(session.id);
-    setStage('mild');
+    setStage('technique');
   };
 
   const handleComplete = () => {
     persist({ status: 'completed', completed_at: new Date().toISOString() });
+    // Tonight's routine card tracks this as the "pre-bed intention" step.
+    if (session.technique === 'mild' && user) markMildIntentionSet(user.id).catch(() => {});
     setStage('closed');
+  };
+
+  const renderStage = () => {
+    if (stage === 'alarm') return <AlarmStage session={session} onBegin={handleBegin} onSkip={handleSkip} />;
+    if (stage === 'recall') {
+      return <RecallStage onSave={handleSaveRecall} onSkip={() => setStage('window')} />;
+    }
+    if (stage === 'window') return <WakeWindowStage session={session} onContinue={handleEndWindow} />;
+    if (stage === 'technique') {
+      const TechniqueStage = TECHNIQUE_STAGES[session.technique as WbtbTechnique];
+      return <TechniqueStage session={session} onComplete={handleComplete} />;
+    }
+    return <ClosedStage session={session} onClose={close} />;
   };
 
   return (
     <ScreenContainer>
       {stage !== 'closed' ? <SessionHeader {...STAGE_HEADERS[stage]} onClose={close} /> : null}
 
-      {stage === 'alarm' ? (
-        <AlarmStage session={session} onBegin={handleBegin} onSkip={handleSkip} />
-      ) : null}
-      {stage === 'recall' ? (
-        <RecallStage onSave={handleSaveRecall} onSkip={() => setStage('window')} />
-      ) : null}
-      {stage === 'window' ? <WakeWindowStage session={session} onContinue={handleEndWindow} /> : null}
-      {stage === 'mild' ? <MildStage session={session} onComplete={handleComplete} /> : null}
-      {stage === 'closed' ? <ClosedStage session={session} onClose={close} /> : null}
+      <CrossFade contentKey={stage} slidePx={STAGE_SLIDE_PX} style={styles.stage}>
+        {renderStage()}
+      </CrossFade>
 
       {syncError ? <Text style={[typography.caption, styles.syncError]}>{syncError}</Text> : null}
     </ScreenContainer>
@@ -156,6 +176,9 @@ const styles = StyleSheet.create({
   center: {
     flex: 1,
     justifyContent: 'center',
+  },
+  stage: {
+    flex: 1,
   },
   bottomAction: {
     marginBottom: spacing.lg,

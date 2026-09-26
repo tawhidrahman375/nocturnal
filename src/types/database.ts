@@ -107,6 +107,7 @@ export type Database = {
           id: string
           longest_streak: number
           main_goal: string | null
+          mild_intention_set_at: string | null
           natural_wake_time: number | null
           streak_freezes: number
           tried_techniques: string[]
@@ -123,6 +124,7 @@ export type Database = {
           id: string
           longest_streak?: number
           main_goal?: string | null
+          mild_intention_set_at?: string | null
           natural_wake_time?: number | null
           streak_freezes?: number
           tried_techniques?: string[]
@@ -139,6 +141,7 @@ export type Database = {
           id?: string
           longest_streak?: number
           main_goal?: string | null
+          mild_intention_set_at?: string | null
           natural_wake_time?: number | null
           streak_freezes?: number
           tried_techniques?: string[]
