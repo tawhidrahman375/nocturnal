@@ -101,8 +101,15 @@ export type Database = {
           created_at: string
           current_streak: number
           display_name: string | null
+          dreams_per_week: string | null
+          experience_level: string | null
+          freeze_last_replenished: string
           id: string
           longest_streak: number
+          main_goal: string | null
+          natural_wake_time: number | null
+          streak_freezes: number
+          tried_techniques: string[]
           updated_at: string
         }
         Insert: {
@@ -110,8 +117,15 @@ export type Database = {
           created_at?: string
           current_streak?: number
           display_name?: string | null
+          dreams_per_week?: string | null
+          experience_level?: string | null
+          freeze_last_replenished?: string
           id: string
           longest_streak?: number
+          main_goal?: string | null
+          natural_wake_time?: number | null
+          streak_freezes?: number
+          tried_techniques?: string[]
           updated_at?: string
         }
         Update: {
@@ -119,8 +133,15 @@ export type Database = {
           created_at?: string
           current_streak?: number
           display_name?: string | null
+          dreams_per_week?: string | null
+          experience_level?: string | null
+          freeze_last_replenished?: string
           id?: string
           longest_streak?: number
+          main_goal?: string | null
+          natural_wake_time?: number | null
+          streak_freezes?: number
+          tried_techniques?: string[]
           updated_at?: string
         }
         Relationships: []
@@ -191,6 +212,7 @@ export type Database = {
           id: string
           sleep_at: string
           status: string
+          technique: string
           updated_at: string
           user_id: string
           wake_at: string
@@ -206,6 +228,7 @@ export type Database = {
           id?: string
           sleep_at: string
           status?: string
+          technique?: string
           updated_at?: string
           user_id: string
           wake_at: string
@@ -221,6 +244,7 @@ export type Database = {
           id?: string
           sleep_at?: string
           status?: string
+          technique?: string
           updated_at?: string
           user_id?: string
           wake_at?: string
