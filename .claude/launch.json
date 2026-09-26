@@ -4,8 +4,9 @@
     {
       "name": "nocturnal-web",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["expo", "start", "--web", "--port", "8090", "--clear"],
-      "port": 8090
+      "runtimeArgs": ["expo", "start", "--web", "--port", "8095", "--clear"],
+      "port": 8095,
+      "autoPort": false
     }
   ]
 }
