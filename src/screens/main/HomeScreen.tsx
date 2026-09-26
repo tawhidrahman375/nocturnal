@@ -1,23 +1,46 @@
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { useNavigation } from '@react-navigation/native';
 import { Flame, LucideIcon, Moon, PenLine, Sparkles } from 'lucide-react-native';
+import { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BeginnerTrackCard } from '../../components/BeginnerTrackCard';
 import { Card } from '../../components/Card';
+import { MilestoneOverlay } from '../../components/MilestoneOverlay';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { TonightRoutineCard } from '../../components/TonightRoutineCard';
 import { WbtbCard } from '../../components/WbtbCard';
 import { useAuth } from '../../hooks/useAuth';
 import { useDreams } from '../../hooks/useDreams';
+import { useMilestoneCheck } from '../../hooks/useMilestoneCheck';
 import { useProfile } from '../../hooks/useProfile';
+import { MainTabParamList } from '../../navigation/types';
 import { colors, radius, spacing, typography } from '../../theme';
 
 export function HomeScreen() {
   const { user } = useAuth();
   const { profile } = useProfile();
   const { dreams } = useDreams();
+  const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
+  // Also owns milestone 3 (first AI insight) — see lib/aiInsight.ts for why nothing
+  // calls `triggerFirstInsightMilestone` yet. Whatever eventually displays the first
+  // real insight should grab it from this same hook instance and call it, so the
+  // dismiss-and-navigate handling below already works for it unchanged.
+  const { milestone, checkStreakMilestone, dismissMilestone } = useMilestoneCheck();
 
   const greetingName = profile?.display_name || user?.email?.split('@')[0] || 'dreamer';
   const recentDreams = dreams.slice(0, 3);
   const lucidDreams = dreams.filter((dream) => dream.is_lucid).length;
+  const currentStreak = profile?.current_streak;
+
+  useEffect(() => {
+    if (user && currentStreak) checkStreakMilestone(user.id, currentStreak);
+  }, [user, currentStreak, checkStreakMilestone]);
+
+  const handleMilestoneDismiss = () => {
+    const wasInsight = milestone === 'firstInsight';
+    dismissMilestone();
+    if (wasInsight) navigation.navigate('Insights');
+  };
 
   return (
     <ScreenContainer edges={['top']}>
@@ -74,6 +97,8 @@ export function HomeScreen() {
           )}
         </View>
       </ScrollView>
+
+      <MilestoneOverlay milestone={milestone} visible={milestone !== null} onDismiss={handleMilestoneDismiss} />
     </ScreenContainer>
   );
 }
