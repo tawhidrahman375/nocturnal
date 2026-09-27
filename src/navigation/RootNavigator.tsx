@@ -5,6 +5,7 @@ import { AuthNavigator } from './AuthNavigator';
 import { navigationRef } from './navigationRef';
 import { useAuth } from '../hooks/useAuth';
 import { useOnboardingGate } from '../hooks/useOnboardingGate';
+import { usePurchasesIdentity } from '../hooks/usePurchasesIdentity';
 import { useRealityCheckNotificationRouting } from '../hooks/useRealityCheckNotificationRouting';
 import { useWbtbNotificationRouting } from '../hooks/useWbtbNotificationRouting';
 import { OnboardingQuizScreen } from '../screens/onboarding/OnboardingQuizScreen';
@@ -29,6 +30,7 @@ export function RootNavigator() {
 
   useWbtbNotificationRouting(!!session && isNavReady);
   useRealityCheckNotificationRouting(!!session);
+  usePurchasesIdentity(session);
 
   const content = !session ? (
     <AuthNavigator />

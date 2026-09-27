@@ -8,11 +8,13 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from './src/hooks/useAuth';
 import { configureNotifications } from './src/lib/notifications';
+import { configurePurchases } from './src/lib/purchases';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { colors } from './src/theme';
 
 SplashScreen.preventAutoHideAsync();
 configureNotifications();
+configurePurchases();
 
 function AppShell() {
   const { isLoading: isAuthLoading } = useAuth();

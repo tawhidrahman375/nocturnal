@@ -27,6 +27,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { useDreams } from '../../hooks/useDreams';
 import { useProfile } from '../../hooks/useProfile';
 import { useRealityCheckSettings } from '../../hooks/useRealityCheckSettings';
+import { useSubscription } from '../../hooks/useSubscription';
+import { purchasesSupported } from '../../lib/purchases';
 import { formatDuration, formatTime } from '../../lib/wbtb';
 import { colors, spacing, typography } from '../../theme';
 
@@ -76,14 +78,30 @@ export function ProfileScreen() {
   const { settings } = useRealityCheckSettings();
   const { profile } = useProfile();
   const { dreams } = useDreams();
+  const { isPro, isLoading: subscriptionLoading, openPaywall, openCustomerCenter, restore } =
+    useSubscription();
 
   const lucidDreams = dreams.filter((dream) => dream.is_lucid).length;
 
+  const subscriptionCaption = !purchasesSupported
+    ? 'iOS & Android only'
+    : subscriptionLoading
+      ? undefined
+      : isPro
+        ? 'Pro'
+        : 'Free';
+  // Already subscribed: open the native self-service UI to manage or cancel.
+  // Not subscribed: open the paywall to upgrade.
+  const handleSubscriptionPress = () => (isPro ? openCustomerCenter() : openPaywall());
+
   const [restoreMessage, setRestoreMessage] = useState<string | null>(null);
-  // Stub — no RevenueCat entitlements exist yet (see PAYWALL_TODO.md), so there is
-  // truly nothing to restore pre-launch. Wire this to the real restore call once
-  // the paywall/RevenueCat integration lands.
-  const handleRestorePurchases = () => setRestoreMessage('Nothing to restore');
+  const [restoring, setRestoring] = useState(false);
+  const handleRestorePurchases = async () => {
+    setRestoring(true);
+    const { error } = await restore();
+    setRestoring(false);
+    setRestoreMessage(error ?? 'Restored');
+  };
 
   const [deleteStep, setDeleteStep] = useState<0 | 1 | 2>(0);
   const [deleting, setDeleting] = useState(false);
@@ -110,8 +128,12 @@ export function ProfileScreen() {
 
   return (
     <ScreenContainer edges={['top']} edgeToEdge>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <NightSky intensity="subtle" edgeFade>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
+        <NightSky intensity="subtle" style={styles.sky}>
           <Arrive style={styles.header}>
             <Text style={[typography.heroTitle, styles.title]}>You</Text>
           </Arrive>
@@ -130,75 +152,80 @@ export function ProfileScreen() {
               <StatPill icon={Moon} value={lucidDreams} label="Lucid" tint={colors.text.secondary} />
             </Arrive>
           </View>
-        </NightSky>
 
-        <View style={styles.settingsGroup}>
-          <Arrive delay={120}>
-            <AnimatedPressable onPress={() => navigation.navigate('RealityCheckSetup')}>
-              <Card style={styles.rowCard}>
-                <View style={styles.rowLeft}>
-                  <Eye color={colors.accent.primary} size={20} strokeWidth={1.5} />
-                  <View>
-                    <Text style={[typography.bodyMedium, styles.email]}>Reality checks</Text>
-                    <Text style={[typography.label, styles.label]}>{realityCheckSummary(settings)}</Text>
+          <View style={styles.settingsGroup}>
+            <Arrive delay={120}>
+              <AnimatedPressable onPress={() => navigation.navigate('RealityCheckSetup')}>
+                <Card style={styles.rowCard}>
+                  <View style={styles.rowLeft}>
+                    <Eye color={colors.accent.primary} size={20} strokeWidth={1.5} />
+                    <View>
+                      <Text style={[typography.bodyMedium, styles.email]}>Reality checks</Text>
+                      <Text style={[typography.label, styles.label]}>{realityCheckSummary(settings)}</Text>
+                    </View>
                   </View>
-                </View>
-                <ChevronRight color={colors.text.tertiary} size={20} strokeWidth={1.5} />
-              </Card>
-            </AnimatedPressable>
-          </Arrive>
+                  <ChevronRight color={colors.text.tertiary} size={20} strokeWidth={1.5} />
+                </Card>
+              </AnimatedPressable>
+            </Arrive>
 
-          <Arrive delay={160}>
-            <SettingsRow icon={Bell} label="Notifications" caption="Coming soon" />
-          </Arrive>
+            <Arrive delay={160}>
+              <SettingsRow icon={Bell} label="Notifications" caption="Coming soon" />
+            </Arrive>
 
-          <Arrive delay={200}>
-            <SettingsRow icon={AlarmClock} label="WBTB defaults" caption="Coming soon" />
-          </Arrive>
+            <Arrive delay={200}>
+              <SettingsRow icon={AlarmClock} label="WBTB defaults" caption="Coming soon" />
+            </Arrive>
 
-          <Arrive delay={240}>
-            <SettingsRow icon={Crown} label="Subscription" caption="Coming soon" />
-          </Arrive>
+            <Arrive delay={240}>
+              <SettingsRow
+                icon={Crown}
+                label="Subscription"
+                caption={subscriptionCaption}
+                onPress={purchasesSupported ? handleSubscriptionPress : undefined}
+              />
+            </Arrive>
 
-          <Arrive delay={260}>
-            <SettingsRow
-              icon={RotateCcw}
-              label="Restore purchases"
-              caption={restoreMessage ?? undefined}
-              onPress={handleRestorePurchases}
-            />
-          </Arrive>
+            <Arrive delay={260}>
+              <SettingsRow
+                icon={RotateCcw}
+                label="Restore purchases"
+                caption={restoring ? 'Restoring…' : (restoreMessage ?? undefined)}
+                onPress={purchasesSupported ? handleRestorePurchases : undefined}
+              />
+            </Arrive>
 
-          <Arrive delay={300} style={styles.legalGroup}>
-            <SettingsRow
-              icon={Shield}
-              label="Privacy Policy"
-              onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
-            />
-          </Arrive>
+            <Arrive delay={300} style={styles.legalGroup}>
+              <SettingsRow
+                icon={Shield}
+                label="Privacy Policy"
+                onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+              />
+            </Arrive>
 
-          <Arrive delay={320}>
-            <SettingsRow
-              icon={FileText}
-              label="Terms of Service"
-              onPress={() => Linking.openURL(TERMS_OF_SERVICE_URL)}
-            />
-          </Arrive>
+            <Arrive delay={320}>
+              <SettingsRow
+                icon={FileText}
+                label="Terms of Service"
+                onPress={() => Linking.openURL(TERMS_OF_SERVICE_URL)}
+              />
+            </Arrive>
 
-          <Arrive delay={360}>
-            <AnimatedPressable style={styles.signOutRow} onPress={openDeleteModal}>
-              <Trash color={colors.status.danger} size={18} strokeWidth={1.5} />
-              <Text style={[typography.bodyMedium, styles.deleteText]}>Delete account</Text>
-            </AnimatedPressable>
-          </Arrive>
+            <Arrive delay={360}>
+              <AnimatedPressable style={styles.signOutRow} onPress={openDeleteModal}>
+                <Trash color={colors.status.danger} size={18} strokeWidth={1.5} />
+                <Text style={[typography.bodyMedium, styles.deleteText]}>Delete account</Text>
+              </AnimatedPressable>
+            </Arrive>
 
-          <Arrive delay={380}>
-            <AnimatedPressable style={styles.signOutRow} onPress={signOut}>
-              <LogOut color="#F87171" size={18} strokeWidth={1.5} />
-              <Text style={[typography.bodyMedium, styles.signOutText]}>Sign out</Text>
-            </AnimatedPressable>
-          </Arrive>
-        </View>
+            <Arrive delay={380}>
+              <AnimatedPressable style={styles.signOutRow} onPress={signOut}>
+                <LogOut color="#F87171" size={18} strokeWidth={1.5} />
+                <Text style={[typography.bodyMedium, styles.signOutText]}>Sign out</Text>
+              </AnimatedPressable>
+            </Arrive>
+          </View>
+        </NightSky>
       </ScrollView>
 
       <DeleteAccountModal
@@ -214,8 +241,14 @@ export function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+  },
   scroll: {
-    paddingBottom: spacing.tabBarClearance,
+    flexGrow: 1,
+  },
+  sky: {
+    flex: 1,
   },
   header: {
     paddingTop: spacing.md,
@@ -229,6 +262,7 @@ const styles = StyleSheet.create({
   settingsGroup: {
     paddingHorizontal: spacing.screenPadding,
     paddingTop: spacing.lg,
+    paddingBottom: spacing.tabBarClearance,
   },
   title: {
     color: colors.text.primary,

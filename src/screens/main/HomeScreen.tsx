@@ -12,6 +12,7 @@ import { ScreenContainer } from '../../components/ScreenContainer';
 import { TonightRoutineCard } from '../../components/TonightRoutineCard';
 import { WbtbCard } from '../../components/WbtbCard';
 import { useAuth } from '../../hooks/useAuth';
+import { useDreamInsight } from '../../hooks/useDreamInsight';
 import { useDreams } from '../../hooks/useDreams';
 import { useMilestoneCheck } from '../../hooks/useMilestoneCheck';
 import { useProfile } from '../../hooks/useProfile';
@@ -23,11 +24,13 @@ export function HomeScreen() {
   const { profile } = useProfile();
   const { dreams } = useDreams();
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
-  // Also owns milestone 3 (first AI insight) — see lib/aiInsight.ts for why nothing
-  // calls `triggerFirstInsightMilestone` yet. Whatever eventually displays the first
-  // real insight should grab it from this same hook instance and call it, so the
-  // dismiss-and-navigate handling below already works for it unchanged.
-  const { milestone, checkStreakMilestone, dismissMilestone } = useMilestoneCheck();
+  // Also owns milestone 3 (first AI insight): useDreamInsight below silently
+  // generates (or re-fetches) today's insight on every Home visit, and the
+  // isFirst-effect right after it fires this same hook instance the moment that
+  // generation is the user's very first ever — so the dismiss-and-navigate handling
+  // below (see handleMilestoneDismiss) carries it straight to Insights to read it.
+  const { milestone, checkStreakMilestone, triggerFirstInsightMilestone, dismissMilestone } =
+    useMilestoneCheck();
 
   const greetingName = profile?.display_name || user?.email?.split('@')[0] || 'dreamer';
   const recentDreams = dreams.slice(0, 3);
@@ -37,6 +40,12 @@ export function HomeScreen() {
   useEffect(() => {
     if (user && currentStreak) checkStreakMilestone(user.id, currentStreak);
   }, [user, currentStreak, checkStreakMilestone]);
+
+  const { isFirst: isFirstInsight } = useDreamInsight(dreams.length);
+
+  useEffect(() => {
+    if (isFirstInsight) triggerFirstInsightMilestone();
+  }, [isFirstInsight, triggerFirstInsightMilestone]);
 
   const handleMilestoneDismiss = () => {
     const wasInsight = milestone === 'firstInsight';
@@ -135,7 +144,9 @@ function BareStat({
     <View style={styles.bareStat}>
       <Icon color={tint} size={16} strokeWidth={1.75} />
       <Text style={[typography.stat, styles.bareStatValue]}>{value}</Text>
-      <Text style={[typography.caption, styles.bareStatLabel]}>{label}</Text>
+      <View style={styles.bareStatLabelChip}>
+        <Text style={[typography.caption, styles.bareStatLabel]}>{label}</Text>
+      </View>
     </View>
   );
 }
@@ -190,8 +201,14 @@ const styles = StyleSheet.create({
   bareStatValue: {
     color: colors.text.primary,
   },
+  bareStatLabelChip: {
+    position: 'relative',
+    zIndex: 10,
+    elevation: 10,
+  },
   bareStatLabel: {
-    color: colors.text.tertiary,
+    color: colors.text.primary,
+    fontWeight: '700',
   },
   section: {
     gap: spacing.sm,
