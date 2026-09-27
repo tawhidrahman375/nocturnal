@@ -12,6 +12,10 @@ type ProgressRingProps = PropsWithChildren<{
   strokeWidth: number;
   progress: number;
   color?: string;
+  // Defaults to the same border used everywhere else in the app — callers with a
+  // low-fraction progress against a busy background (TonightRoutineCard) can pass a
+  // fainter track instead so the filled arc reads clearly without changing `color`.
+  trackColor?: string;
   // Reveal (650ms ease-out) is the default — a caller with a continuously-updating
   // progress (a live countdown) passes a shorter linear duration instead so each tick
   // sweeps smoothly rather than re-easing every time. See WakeWindowStage.
@@ -27,6 +31,7 @@ export function ProgressRing({
   strokeWidth,
   progress,
   color = colors.accent.primary,
+  trackColor = colors.border.default,
   durationMs = DURATIONS.reveal,
   easing = EASE_OUT,
   children,
@@ -65,7 +70,7 @@ export function ProgressRing({
           cx={size / 2}
           cy={size / 2}
           r={r}
-          stroke={colors.border.default}
+          stroke={trackColor}
           strokeWidth={strokeWidth}
           fill="none"
         />

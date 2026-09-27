@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { PropsWithChildren, useEffect, useMemo, useState } from 'react';
+import { PropsWithChildren, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, LayoutChangeEvent, Platform, StyleSheet, View, ViewStyle } from 'react-native';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { DURATIONS, EASE_AMBIENT } from '../lib/motion';
@@ -25,7 +25,20 @@ type Star = {
   twinkleAnim: Animated.Value | null;
 };
 
-const EDGE_FADE_HEIGHT = 48;
+type ShootingStar = {
+  key: number;
+  startX: number;
+  startY: number;
+  travelX: number;
+  travelY: number;
+  duration: number;
+};
+
+// Taller than a plain linear 2-stop fade would need: a short band still reads as a hard
+// seam (Mach-band effect) against a busy starfield, no matter how "correct" the alpha
+// math is. Height plus the eased middle stop below both do the same job of spreading the
+// perceived edge out instead of letting it resolve to solid color abruptly.
+const EDGE_FADE_HEIGHT = 96;
 
 // Star count scales with the container's own measured height (DESIGN.md §8: density
 // should scale with screen area, not be fixed-count) so a short header panel and a
@@ -66,6 +79,20 @@ const BREATH_HALF_MS = 12000;
 const BREATH_UPDATE_INTERVAL_MS = 150;
 const BREATH_DEEP_ALT = '#12103E';
 const BREATH_MID_ALT = '#241C63';
+
+// Shooting star: a single streak crossing the top of the sky every 25-45s, never more
+// than one in flight at once — the next one is only scheduled once the current one's
+// timing animation actually finishes (see the effect below), not on a fixed interval.
+const SHOOTING_STAR_MIN_INTERVAL_MS = 25000;
+const SHOOTING_STAR_MAX_INTERVAL_MS = 45000;
+const SHOOTING_STAR_MIN_DURATION_MS = 800;
+const SHOOTING_STAR_MAX_DURATION_MS = 1200;
+const SHOOTING_STAR_LENGTH = 90;
+// Down-and-across, same diagonal every time — only the start point and travel distance
+// are randomized, so the angle never looks arbitrary.
+const SHOOTING_STAR_ANGLE_DEG = 32;
+const SHOOTING_STAR_MIN_TRAVEL_RATIO = 0.3;
+const SHOOTING_STAR_MAX_TRAVEL_RATIO = 0.55;
 
 // LinearGradient takes start/end points (0-1) rather than a CSS-style angle. A
 // corner-to-corner span reads as a ~135deg diagonal; pulling both points toward the
@@ -125,6 +152,11 @@ function hexToRgb(hex: string) {
     g: parseInt(hex.slice(3, 5), 16),
     b: parseInt(hex.slice(5, 7), 16),
   };
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const { r, g, b } = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 function mixColor(from: string, to: string, t: number): string {
@@ -282,6 +314,87 @@ export function NightSky({ children, intensity = 'full', style, edgeFade = false
   const gradientDeep = breathing ? mixColor(colors.nightSky.deep, BREATH_DEEP_ALT, breatheT) : colors.nightSky.deep;
   const gradientMid = breathing ? mixColor(colors.nightSky.mid, BREATH_MID_ALT, breatheT) : colors.nightSky.mid;
 
+  // Shooting star: read current size from a ref instead of closing over `size` directly
+  // so the scheduling loop below doesn't restart (and lose its pending timer) every time
+  // a layout pass nudges width/height by a pixel — it only restarts when reducedMotion
+  // itself changes.
+  const sizeRef = useRef(size);
+  useEffect(() => {
+    sizeRef.current = size;
+  }, [size]);
+
+  const [shootingStar, setShootingStar] = useState<ShootingStar | null>(null);
+  const [shootProgress] = useState(() => new Animated.Value(0));
+
+  useEffect(() => {
+    // No setState here — the render below already gates on `reducedMotion` directly,
+    // so there's nothing to clean up if a star happened to be mid-flight when this
+    // flipped on (it just stops being rendered immediately instead of finishing its fade).
+    if (reducedMotion) return;
+    let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const useNativeDriver = Platform.OS !== 'web';
+
+    const scheduleNext = (delay: number) => {
+      timeoutId = setTimeout(fire, delay);
+    };
+
+    const randomDelay = () =>
+      SHOOTING_STAR_MIN_INTERVAL_MS + Math.random() * (SHOOTING_STAR_MAX_INTERVAL_MS - SHOOTING_STAR_MIN_INTERVAL_MS);
+
+    const fire = () => {
+      if (cancelled) return;
+      const { width, height } = sizeRef.current;
+      // Not measured yet (or a zero-size subtle header) — skip this cycle rather than
+      // showing a streak in the wrong place, and try again on the same cadence.
+      if (width <= 0 || height <= 0) {
+        scheduleNext(randomDelay());
+        return;
+      }
+      const duration =
+        SHOOTING_STAR_MIN_DURATION_MS + Math.random() * (SHOOTING_STAR_MAX_DURATION_MS - SHOOTING_STAR_MIN_DURATION_MS);
+      const travelRatio =
+        SHOOTING_STAR_MIN_TRAVEL_RATIO + Math.random() * (SHOOTING_STAR_MAX_TRAVEL_RATIO - SHOOTING_STAR_MIN_TRAVEL_RATIO);
+      const travelX = width * travelRatio;
+      const travelY = travelX * Math.tan((SHOOTING_STAR_ANGLE_DEG * Math.PI) / 180);
+      // Start within the top band, left enough that the full diagonal travel still
+      // lands inside (or just past, which `overflow: hidden` on the container clips
+      // cleanly) the container's own width.
+      const startX = Math.random() * Math.max(width - travelX, width * 0.1);
+      const startY = Math.random() * Math.min(height * 0.18, height);
+
+      setShootingStar({ key: Date.now(), startX, startY, travelX, travelY, duration });
+      shootProgress.setValue(0);
+      Animated.timing(shootProgress, {
+        toValue: 1,
+        duration,
+        easing: Easing.linear,
+        useNativeDriver,
+      }).start(({ finished }) => {
+        if (cancelled) return;
+        setShootingStar(null);
+        if (finished) scheduleNext(randomDelay());
+      });
+    };
+
+    scheduleNext(randomDelay());
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [reducedMotion, shootProgress]);
+
+  const shootOpacity = shootProgress.interpolate({
+    inputRange: [0, 0.15, 0.85, 1],
+    outputRange: [0, 1, 1, 0],
+  });
+  const shootTranslateX = shootingStar
+    ? shootProgress.interpolate({ inputRange: [0, 1], outputRange: [0, shootingStar.travelX] })
+    : 0;
+  const shootTranslateY = shootingStar
+    ? shootProgress.interpolate({ inputRange: [0, 1], outputRange: [0, shootingStar.travelY] })
+    : 0;
+
   return (
     <View style={[styles.container, style]} onLayout={handleLayout}>
       <LinearGradient colors={[gradientDeep, gradientMid]} start={start} end={end} style={StyleSheet.absoluteFill} />
@@ -305,11 +418,48 @@ export function NightSky({ children, intensity = 'full', style, edgeFade = false
           <StarDots stars={stars} />
         </View>
       )}
+      {shootingStar && !reducedMotion ? (
+        <Animated.View
+          key={shootingStar.key}
+          pointerEvents="none"
+          style={[
+            styles.shootingStar,
+            {
+              left: shootingStar.startX,
+              top: shootingStar.startY,
+              opacity: shootOpacity,
+              transform: [
+                { translateX: shootTranslateX },
+                { translateY: shootTranslateY },
+                { rotate: `${SHOOTING_STAR_ANGLE_DEG}deg` },
+              ],
+            },
+          ]}
+        >
+          <LinearGradient
+            colors={['transparent', '#FFFFFF']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.shootingStarTrail}
+          />
+        </Animated.View>
+      ) : null}
       <View style={styles.content}>{children}</View>
       {edgeFade ? (
         <LinearGradient
           pointerEvents="none"
-          colors={['transparent', colors.background.primary]}
+          // A plain 2-stop linear fade still reads as a hard seam (Mach-band effect) once
+          // it resolves to flat color — these extra stops trace an ease-in-out curve
+          // (slow to start, slow to finish, steepest through the middle) so the eye can't
+          // find the edge.
+          colors={[
+            'transparent',
+            hexToRgba(colors.background.primary, 0.06),
+            hexToRgba(colors.background.primary, 0.35),
+            hexToRgba(colors.background.primary, 0.75),
+            colors.background.primary,
+          ]}
+          locations={[0, 0.25, 0.5, 0.75, 1]}
           style={styles.edgeFade}
         />
       ) : null}
@@ -346,5 +496,15 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     height: EDGE_FADE_HEIGHT,
+  },
+  shootingStar: {
+    position: 'absolute',
+    width: SHOOTING_STAR_LENGTH,
+    height: 2,
+  },
+  shootingStarTrail: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 999,
   },
 });

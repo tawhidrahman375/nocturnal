@@ -21,7 +21,6 @@ import { Arrive } from '../../components/Arrive';
 import { Card } from '../../components/Card';
 import { DeleteAccountModal } from '../../components/DeleteAccountModal';
 import { NightSky } from '../../components/NightSky';
-import { Panel } from '../../components/Panel';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { StatPill } from '../../components/StatPill';
 import { useAuth } from '../../hooks/useAuth';
@@ -111,29 +110,29 @@ export function ProfileScreen() {
 
   return (
     <ScreenContainer edges={['top']} edgeToEdge>
-      <NightSky intensity="subtle" edgeFade>
-        <Arrive style={styles.header}>
-          <Text style={[typography.heroTitle, styles.title]}>You</Text>
-        </Arrive>
-
-        <View style={styles.heroBlock}>
-          <Arrive delay={40}>
-            <Card style={styles.card}>
-              <Text style={[typography.label, styles.label]}>Signed in as</Text>
-              <Text style={[typography.bodyMedium, styles.email]}>{user?.email}</Text>
-            </Card>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <NightSky intensity="subtle" edgeFade>
+          <Arrive style={styles.header}>
+            <Text style={[typography.heroTitle, styles.title]}>You</Text>
           </Arrive>
 
-          <Arrive delay={80} style={styles.statsRow}>
-            <StatPill icon={Moon} value={dreams.length} label="Dreams logged" tint={colors.text.secondary} />
-            <StatPill icon={Flame} value={profile?.current_streak ?? 0} label="Day streak" tint={colors.accent.primary} />
-            <StatPill icon={Moon} value={lucidDreams} label="Lucid" tint={colors.text.secondary} />
-          </Arrive>
-        </View>
-      </NightSky>
+          <View style={styles.heroBlock}>
+            <Arrive delay={40}>
+              <Card style={styles.card}>
+                <Text style={[typography.label, styles.label]}>Signed in as</Text>
+                <Text style={[typography.bodyMedium, styles.email]}>{user?.email}</Text>
+              </Card>
+            </Arrive>
 
-      <Panel>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+            <Arrive delay={80} style={styles.statsRow}>
+              <StatPill icon={Moon} value={dreams.length} label="Dreams logged" tint={colors.text.secondary} />
+              <StatPill icon={Flame} value={profile?.current_streak ?? 0} label="Day streak" tint={colors.accent.primary} />
+              <StatPill icon={Moon} value={lucidDreams} label="Lucid" tint={colors.text.secondary} />
+            </Arrive>
+          </View>
+        </NightSky>
+
+        <View style={styles.settingsGroup}>
           <Arrive delay={120}>
             <AnimatedPressable onPress={() => navigation.navigate('RealityCheckSetup')}>
               <Card style={styles.rowCard}>
@@ -199,8 +198,8 @@ export function ProfileScreen() {
               <Text style={[typography.bodyMedium, styles.signOutText]}>Sign out</Text>
             </AnimatedPressable>
           </Arrive>
-        </ScrollView>
-      </Panel>
+        </View>
+      </ScrollView>
 
       <DeleteAccountModal
         step={deleteStep}
@@ -216,8 +215,6 @@ export function ProfileScreen() {
 
 const styles = StyleSheet.create({
   scroll: {
-    paddingHorizontal: spacing.screenPadding,
-    paddingTop: spacing.lg,
     paddingBottom: spacing.tabBarClearance,
   },
   header: {
@@ -226,6 +223,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screenPadding,
   },
   heroBlock: {
+    paddingHorizontal: spacing.screenPadding,
+    paddingTop: spacing.lg,
+  },
+  settingsGroup: {
     paddingHorizontal: spacing.screenPadding,
     paddingTop: spacing.lg,
   },

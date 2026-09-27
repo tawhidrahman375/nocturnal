@@ -83,7 +83,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    opacity: 0.4,
   },
   eyebrow: {
     color: colors.text.tertiary,

@@ -1,6 +1,8 @@
 import { Check, Moon } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 import { Card } from './Card';
+import { CountBump } from './CountBump';
+import { CrossFade } from './CrossFade';
 import { PopIn } from './PopIn';
 import { ProgressRing } from './ProgressRing';
 import { useTonightRoutine } from '../hooks/useTonightRoutine';
@@ -24,10 +26,18 @@ export function TonightRoutineCard({ dreams, mildIntentionSetAt }: TonightRoutin
 
   const ring = (
     <View style={styles.ringWrap}>
-      <ProgressRing size={72} strokeWidth={7} progress={completedCount / 4} color={colors.accent.primary}>
-        <Text style={[typography.bodyMedium, styles.ringLabel, isComplete && styles.ringLabelComplete]}>
-          {completedCount}/4
-        </Text>
+      <ProgressRing
+        size={72}
+        strokeWidth={10}
+        trackColor={colors.border.subtle}
+        progress={completedCount / 4}
+        color={isComplete ? colors.status.lucid : colors.accent.primary}
+      >
+        <CountBump valueKey={completedCount}>
+          <Text style={[typography.bodyMedium, styles.ringLabel, isComplete && styles.ringLabelComplete]}>
+            {completedCount}/4
+          </Text>
+        </CountBump>
       </ProgressRing>
     </View>
   );
@@ -38,24 +48,39 @@ export function TonightRoutineCard({ dreams, mildIntentionSetAt }: TonightRoutin
       <View style={styles.body}>
         {isComplete ? <PopIn key="complete">{ring}</PopIn> : ring}
         <View style={styles.steps}>
-          <StepRow label={STEP_LABELS.realityCheck} done={steps?.realityCheck ?? false} />
-          <StepRow label={STEP_LABELS.journal} done={steps?.journal ?? false} />
-          <StepRow label={STEP_LABELS.intention} done={steps?.intention ?? false} />
-          <StepRow label={STEP_LABELS.wbtb} done={steps?.wbtb ?? false} />
+          <StepRow label={STEP_LABELS.realityCheck} done={steps?.realityCheck ?? false} complete={isComplete} />
+          <StepRow label={STEP_LABELS.journal} done={steps?.journal ?? false} complete={isComplete} />
+          <StepRow label={STEP_LABELS.intention} done={steps?.intention ?? false} complete={isComplete} />
+          <StepRow label={STEP_LABELS.wbtb} done={steps?.wbtb ?? false} complete={isComplete} />
         </View>
       </View>
     </Card>
   );
 }
 
-function StepRow({ label, done }: { label: string; done: boolean }) {
-  const tint = done ? colors.text.primary : colors.text.tertiary;
-  const Icon = done ? Check : Moon;
+// Mirrors BeginnerTrackScreen's day-complete row: CrossFade swaps the pending/done
+// content (the Cross token — this is also what reduced motion falls back to, since
+// CrossFade's opacity fade isn't gated on it), and Pop plays its one-time overshoot on
+// just the checkmark, the moment it first mounts into the "done" branch. `complete` is
+// the routine's overall 4/4 state, not this row's own — every tick turns the same
+// lucid-green as the ring once all four are done, instead of each staying its own color.
+function StepRow({ label, done, complete }: { label: string; done: boolean; complete: boolean }) {
   return (
-    <View style={styles.stepRow}>
-      <Icon color={tint} size={14} strokeWidth={2} />
-      <Text style={[typography.label, { color: tint }]}>{label}</Text>
-    </View>
+    <CrossFade contentKey={done ? 'done' : 'pending'}>
+      {done ? (
+        <View style={styles.stepRow}>
+          <PopIn>
+            <Check color={complete ? colors.status.lucid : colors.text.primary} size={14} strokeWidth={2} />
+          </PopIn>
+          <Text style={[typography.label, styles.stepLabelDone]}>{label}</Text>
+        </View>
+      ) : (
+        <View style={styles.stepRow}>
+          <Moon color={colors.text.tertiary} size={14} strokeWidth={2} />
+          <Text style={[typography.label, styles.stepLabelPending]}>{label}</Text>
+        </View>
+      )}
+    </CrossFade>
   );
 }
 
@@ -80,7 +105,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   ringLabelComplete: {
-    color: colors.accent.primary,
+    color: colors.status.lucid,
   },
   steps: {
     flex: 1,
@@ -90,5 +115,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  stepLabelDone: {
+    color: colors.text.primary,
+  },
+  stepLabelPending: {
+    color: colors.text.tertiary,
   },
 });

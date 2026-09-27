@@ -176,10 +176,14 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     paddingHorizontal: spacing.xs,
   },
+  // flex: 1 so all three columns are the same width regardless of how long each one's
+  // own label is ("Dreams logged" vs "Lucid") — space-between alone only equalizes the
+  // gap between columns, not their width, so the numbers above uneven-width labels
+  // don't line up evenly.
   bareStat: {
+    flex: 1,
     alignItems: 'center',
     gap: 2,
   },
