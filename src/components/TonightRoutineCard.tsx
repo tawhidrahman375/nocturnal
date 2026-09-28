@@ -1,5 +1,7 @@
+import { useNavigation } from '@react-navigation/native';
 import { Check, Moon } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
+import { AnimatedPressable } from './AnimatedPressable';
 import { Card } from './Card';
 import { CountBump } from './CountBump';
 import { CrossFade } from './CrossFade';
@@ -22,6 +24,7 @@ const STEP_LABELS = {
 } as const;
 
 export function TonightRoutineCard({ dreams, mildIntentionSetAt }: TonightRoutineCardProps) {
+  const navigation = useNavigation();
   const { steps, completedCount, isComplete } = useTonightRoutine(dreams, mildIntentionSetAt);
 
   const ring = (
@@ -50,7 +53,12 @@ export function TonightRoutineCard({ dreams, mildIntentionSetAt }: TonightRoutin
         <View style={styles.steps}>
           <StepRow label={STEP_LABELS.realityCheck} done={steps?.realityCheck ?? false} complete={isComplete} />
           <StepRow label={STEP_LABELS.journal} done={steps?.journal ?? false} complete={isComplete} />
-          <StepRow label={STEP_LABELS.intention} done={steps?.intention ?? false} complete={isComplete} />
+          <StepRow
+            label={STEP_LABELS.intention}
+            done={steps?.intention ?? false}
+            complete={isComplete}
+            onPress={steps?.intention ? undefined : () => navigation.navigate('MildPrompt')}
+          />
           <StepRow label={STEP_LABELS.wbtb} done={steps?.wbtb ?? false} complete={isComplete} />
         </View>
       </View>
@@ -64,7 +72,17 @@ export function TonightRoutineCard({ dreams, mildIntentionSetAt }: TonightRoutin
 // just the checkmark, the moment it first mounts into the "done" branch. `complete` is
 // the routine's overall 4/4 state, not this row's own — every tick turns the same
 // lucid-green as the ring once all four are done, instead of each staying its own color.
-function StepRow({ label, done, complete }: { label: string; done: boolean; complete: boolean }) {
+function StepRow({
+  label,
+  done,
+  complete,
+  onPress,
+}: {
+  label: string;
+  done: boolean;
+  complete: boolean;
+  onPress?: () => void;
+}) {
   return (
     <CrossFade contentKey={done ? 'done' : 'pending'}>
       {done ? (
@@ -74,6 +92,16 @@ function StepRow({ label, done, complete }: { label: string; done: boolean; comp
           </PopIn>
           <Text style={[typography.label, styles.stepLabelDone]}>{label}</Text>
         </View>
+      ) : onPress ? (
+        <AnimatedPressable
+          style={styles.stepRow}
+          onPress={onPress}
+          accessibilityRole="button"
+          accessibilityLabel={label}
+        >
+          <Moon color={colors.text.tertiary} size={14} strokeWidth={2} />
+          <Text style={[typography.label, styles.stepLabelPending]}>{label}</Text>
+        </AnimatedPressable>
       ) : (
         <View style={styles.stepRow}>
           <Moon color={colors.text.tertiary} size={14} strokeWidth={2} />

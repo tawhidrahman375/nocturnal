@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MainTabNavigator } from './MainTabNavigator';
 import { AppStackParamList } from './types';
 import { BeginnerTrackScreen } from '../screens/beginner-track/BeginnerTrackScreen';
+import { MildPromptScreen } from '../screens/mild-prompt/MildPromptScreen';
 import { RealityCheckSetupScreen } from '../screens/reality-check/RealityCheckSetupScreen';
 import { WbtbSessionScreen } from '../screens/wbtb/WbtbSessionScreen';
 import { WbtbSetupScreen } from '../screens/wbtb/WbtbSetupScreen';
@@ -30,6 +31,7 @@ export function AppNavigator() {
         options={{ presentation: 'fullScreenModal', gestureEnabled: false, animation: 'fade' }}
       />
       <Stack.Screen name="BeginnerTrack" component={BeginnerTrackScreen} />
+      <Stack.Screen name="MildPrompt" component={MildPromptScreen} options={{ presentation: 'modal' }} />
     </Stack.Navigator>
   );
 }

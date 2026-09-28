@@ -28,6 +28,7 @@ export type AppStackParamList = {
   WbtbSession: { sessionId: string };
   RealityCheckSetup: undefined;
   BeginnerTrack: undefined;
+  MildPrompt: undefined;
 };
 
 declare global {

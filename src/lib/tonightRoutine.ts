@@ -75,6 +75,13 @@ export async function fetchTonightRoutineSteps(
   };
 }
 
+// Shared by TonightRoutineCard's step state and MildPromptScreen — both need the same
+// "did they already do this tonight" check, against the same 6am-anchored routine day.
+export function isMildIntentionSetTonight(mildIntentionSetAt: string | null, now: Date = new Date()) {
+  if (!mildIntentionSetAt) return false;
+  return isWithinRoutineDay(mildIntentionSetAt, routineDateFor(now), now);
+}
+
 export async function markMildIntentionSet(userId: string) {
   const { error } = await supabase
     .from('profiles')

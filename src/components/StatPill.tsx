@@ -18,7 +18,9 @@ export function StatPill({ icon: Icon, value, label, tint = colors.accent.primar
         <Icon color={tint} size={16} strokeWidth={1.75} />
         <Text style={[typography.bodyMedium, styles.value]}>{value}</Text>
       </View>
-      <Text style={[typography.caption, styles.label]}>{label}</Text>
+      <View style={styles.labelChip}>
+        <Text style={[typography.caption, styles.label]}>{label}</Text>
+      </View>
     </View>
   );
 }
@@ -41,7 +43,13 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontVariant: ['tabular-nums'],
   },
+  labelChip: {
+    position: 'relative',
+    zIndex: 10,
+    elevation: 10,
+  },
   label: {
-    color: colors.text.secondary,
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
 });

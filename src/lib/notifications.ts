@@ -12,6 +12,11 @@ const REALITY_CHECK_CHANNEL_ID = 'reality-check';
 // Caps how many daily-recurring reminders we keep scheduled at once (and how many identifiers we cancel).
 export const MAX_REALITY_CHECK_SLOTS = 16;
 
+const MILD_PROMPT_CHANNEL_ID = 'mild-prompt';
+// A single stable identifier — DAILY trigger means it fires at most once per day, so
+// there's only ever one of these scheduled at a time (re-scheduling replaces it).
+const MILD_PROMPT_ID = 'mild-prompt';
+
 type WbtbNotificationType = 'wbtb-alarm' | 'wbtb-window-end';
 
 const alarmIds = (sessionId: string) =>
@@ -67,6 +72,27 @@ export async function requestRealityCheckPermission() {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(REALITY_CHECK_CHANNEL_ID, {
       name: 'Reality check reminders',
+      importance: Notifications.AndroidImportance.DEFAULT,
+      sound: 'default',
+    });
+  }
+
+  const current = await Notifications.getPermissionsAsync();
+  if (current.granted) return true;
+  if (!current.canAskAgain) return false;
+
+  const next = await Notifications.requestPermissionsAsync({
+    ios: { allowAlert: true, allowSound: true, allowBadge: false },
+  });
+  return next.granted;
+}
+
+export async function requestMildPromptPermission() {
+  if (!notificationsSupported) return true;
+
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync(MILD_PROMPT_CHANNEL_ID, {
+      name: 'Pre-bed MILD prompt',
       importance: Notifications.AndroidImportance.DEFAULT,
       sound: 'default',
     });
@@ -203,4 +229,35 @@ export function parseRealityCheckNotification(notification: Notifications.Notifi
     slotIndex: Number(data.slotIndex),
     dreamSign: typeof data.dreamSign === 'string' ? data.dreamSign : null,
   };
+}
+
+// One DAILY-trigger local notification timed to the user's bedtime (see
+// useMildPromptScheduling), replacing whatever was scheduled under the same
+// identifier before — re-scheduling on a bedtime change just overwrites it.
+export async function scheduleMildPrompt(hour: number, minute: number) {
+  if (!notificationsSupported) return;
+  await Notifications.scheduleNotificationAsync({
+    identifier: MILD_PROMPT_ID,
+    content: {
+      title: "Set tonight's intention",
+      body: 'Your MILD prompt is ready. Takes ten seconds.',
+      sound: 'default',
+      data: { type: 'mild-prompt' },
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour,
+      minute,
+      channelId: MILD_PROMPT_CHANNEL_ID,
+    },
+  });
+}
+
+export async function cancelMildPrompt() {
+  if (!notificationsSupported) return;
+  await cancelAndDismiss([MILD_PROMPT_ID]);
+}
+
+export function parseMildPromptNotification(notification: Notifications.Notification) {
+  return notification.request.content.data?.type === 'mild-prompt';
 }

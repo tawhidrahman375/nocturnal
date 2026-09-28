@@ -4,6 +4,8 @@ import { AppNavigator } from './AppNavigator';
 import { AuthNavigator } from './AuthNavigator';
 import { navigationRef } from './navigationRef';
 import { useAuth } from '../hooks/useAuth';
+import { useMildPromptNotificationRouting } from '../hooks/useMildPromptNotificationRouting';
+import { useMildPromptScheduling } from '../hooks/useMildPromptScheduling';
 import { useOnboardingGate } from '../hooks/useOnboardingGate';
 import { usePurchasesIdentity } from '../hooks/usePurchasesIdentity';
 import { useRealityCheckNotificationRouting } from '../hooks/useRealityCheckNotificationRouting';
@@ -30,6 +32,8 @@ export function RootNavigator() {
 
   useWbtbNotificationRouting(!!session && isNavReady);
   useRealityCheckNotificationRouting(!!session);
+  useMildPromptNotificationRouting(!!session && isNavReady);
+  useMildPromptScheduling(!!session);
   usePurchasesIdentity(session);
 
   const content = !session ? (
