@@ -29,6 +29,7 @@ export type AppStackParamList = {
   RealityCheckSetup: undefined;
   BeginnerTrack: undefined;
   MildPrompt: undefined;
+  CoachChat: undefined;
 };
 
 declare global {

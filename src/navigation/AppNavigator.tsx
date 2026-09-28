@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MainTabNavigator } from './MainTabNavigator';
 import { AppStackParamList } from './types';
 import { BeginnerTrackScreen } from '../screens/beginner-track/BeginnerTrackScreen';
+import { CoachChatScreen } from '../screens/coach/CoachChatScreen';
 import { MildPromptScreen } from '../screens/mild-prompt/MildPromptScreen';
 import { RealityCheckSetupScreen } from '../screens/reality-check/RealityCheckSetupScreen';
 import { WbtbSessionScreen } from '../screens/wbtb/WbtbSessionScreen';
@@ -32,6 +33,7 @@ export function AppNavigator() {
       />
       <Stack.Screen name="BeginnerTrack" component={BeginnerTrackScreen} />
       <Stack.Screen name="MildPrompt" component={MildPromptScreen} options={{ presentation: 'modal' }} />
+      <Stack.Screen name="CoachChat" component={CoachChatScreen} />
     </Stack.Navigator>
   );
 }

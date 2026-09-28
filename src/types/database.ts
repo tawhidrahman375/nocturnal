@@ -56,6 +56,30 @@ export type Database = {
         }
         Relationships: []
       }
+      coach_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       dream_insights: {
         Row: {
           content: string
@@ -250,6 +274,30 @@ export type Database = {
           enabled?: boolean
           frequency_minutes?: number
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      technique_recommendations: {
+        Row: {
+          attempt_count: number
+          content: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          attempt_count?: number
+          content: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          attempt_count?: number
+          content?: string
+          created_at?: string
+          id?: string
           user_id?: string
         }
         Relationships: []

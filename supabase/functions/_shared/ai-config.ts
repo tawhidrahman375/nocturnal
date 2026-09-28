@@ -5,6 +5,10 @@
 // hunting through each one's source.
 export const CLAUDE_MODEL = "claude-haiku-4-5-20251001";
 
+// The coach chat's model — a real back-and-forth conversation warrants the larger
+// model; every other AI feature here is a single short generation and stays on Haiku.
+export const SONNET_MODEL = "claude-sonnet-5-5";
+
 export const ANTHROPIC_API_VERSION = "2023-06-01";
 
 // Standing house style for every AI-generated, user-facing string this app

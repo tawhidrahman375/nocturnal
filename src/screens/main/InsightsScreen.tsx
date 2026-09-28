@@ -1,7 +1,8 @@
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
-import { Flame, Moon, Sparkles, Trophy, Waves } from 'lucide-react-native';
+import { ChevronRight, Compass, Flame, MessageCircle, Moon, Sparkles, Trophy, Waves } from 'lucide-react-native';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { Arrive } from '../../components/Arrive';
 import { Card } from '../../components/Card';
 import { EmptyState } from '../../components/EmptyState';
@@ -12,8 +13,60 @@ import { StatPill } from '../../components/StatPill';
 import { MIN_DREAMS_FOR_INSIGHT, useDreamInsight } from '../../hooks/useDreamInsight';
 import { useDreams } from '../../hooks/useDreams';
 import { useProfile } from '../../hooks/useProfile';
+import { useTechniqueRecommendation } from '../../hooks/useTechniqueRecommendation';
 import { MainTabParamList } from '../../navigation/types';
 import { colors, spacing, typography } from '../../theme';
+
+function CoachChatEntry() {
+  // Untyped useNavigation (not the tab-scoped hook InsightsScreen itself uses below) so
+  // this can reach CoachChat, a root AppStackParamList screen rather than a sibling tab
+  // — same pattern WbtbCard and BeginnerTrackCard use to reach their own root screens.
+  const navigation = useNavigation();
+
+  return (
+    <AnimatedPressable
+      onPress={() => navigation.navigate('CoachChat')}
+      accessibilityRole="button"
+      accessibilityLabel="Open coach chat"
+    >
+      <Card style={styles.coachCard} elevated>
+        <View style={styles.coachIconWrap}>
+          <MessageCircle color={colors.accent.primary} size={20} strokeWidth={1.75} />
+        </View>
+        <View style={styles.coachCopy}>
+          <Text style={[typography.bodyMedium, styles.coachTitle]}>Talk to your coach</Text>
+          <Text style={[typography.label, styles.coachSubtitle]}>
+            Techniques, sleep science, your own dream signs.
+          </Text>
+        </View>
+        <ChevronRight color={colors.text.tertiary} size={20} strokeWidth={1.5} />
+      </Card>
+    </AnimatedPressable>
+  );
+}
+
+// Reuses the same card chrome as the "Insight" card below (insightCard/insightHeader/
+// insightLabel/insightBody styles) — same card style, same NightSky background behind
+// it, per spec. Renders in both the populated and empty-account branches below so the
+// no-history fallback (lib/techniqueRecommendation.ts) is reachable on a fresh account
+// too, not just once there's enough data for the rest of the screen to unlock.
+function TechniqueRecommendationCard() {
+  const { recommendation, isLoading } = useTechniqueRecommendation();
+
+  return (
+    <Card style={styles.insightCard} elevated>
+      <View style={styles.insightHeader}>
+        <Compass color={colors.accent.primary} size={16} strokeWidth={1.75} />
+        <Text style={[typography.label, styles.insightLabel]}>Your technique</Text>
+      </View>
+      {isLoading ? (
+        <Text style={[typography.body, styles.insightPending]}>Finding your focus...</Text>
+      ) : (
+        <Text style={[typography.body, styles.insightBody]}>{recommendation}</Text>
+      )}
+    </Card>
+  );
+}
 
 export function InsightsScreen() {
   const { dreams } = useDreams();
@@ -34,14 +87,23 @@ export function InsightsScreen() {
           <Text style={[typography.heroTitle, styles.title]}>Insights</Text>
         </View>
 
+        <Arrive style={styles.coachEntryWrap}>
+          <CoachChatEntry />
+        </Arrive>
+
         {totalDreams === 0 ? (
-          <EmptyState
-            icon={Waves}
-            title="Nothing to trace yet."
-            message="A pattern needs more than one night. Keep logging, and it will surface."
-            tint={colors.text.secondary}
-            action={{ label: 'Log a dream', onPress: () => navigation.navigate('Journal') }}
-          />
+          <>
+            <EmptyState
+              icon={Waves}
+              title="Nothing to trace yet."
+              message="A pattern needs more than one night. Keep logging, and it will surface."
+              tint={colors.text.secondary}
+              action={{ label: 'Log a dream', onPress: () => navigation.navigate('Journal') }}
+            />
+            <Arrive delay={80} style={styles.emptyTechniqueWrap}>
+              <TechniqueRecommendationCard />
+            </Arrive>
+          </>
         ) : (
           <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
             <Arrive>
@@ -62,8 +124,12 @@ export function InsightsScreen() {
               <StatPill icon={Moon} value={totalDreams} label="Logged" tint={colors.text.secondary} />
             </Arrive>
 
+            <Arrive delay={90}>
+              <TechniqueRecommendationCard />
+            </Arrive>
+
             {totalDreams >= MIN_DREAMS_FOR_INSIGHT ? (
-              <Arrive delay={100}>
+              <Arrive delay={130}>
                 <Card style={styles.insightCard} elevated>
                   <View style={styles.insightHeader}>
                     <Sparkles color={colors.accent.primary} size={16} strokeWidth={1.75} />
@@ -130,6 +196,10 @@ const styles = StyleSheet.create({
   insightCard: {
     gap: spacing.xs,
   },
+  emptyTechniqueWrap: {
+    paddingHorizontal: spacing.screenPadding,
+    paddingTop: spacing.md,
+  },
   insightHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -145,5 +215,32 @@ const styles = StyleSheet.create({
   },
   insightPending: {
     color: colors.text.tertiary,
+  },
+  coachEntryWrap: {
+    paddingHorizontal: spacing.screenPadding,
+    paddingBottom: spacing.md,
+  },
+  coachCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  coachIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.accent.primaryMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  coachCopy: {
+    flex: 1,
+    gap: spacing.xs / 2,
+  },
+  coachTitle: {
+    color: colors.text.primary,
+  },
+  coachSubtitle: {
+    color: colors.text.secondary,
   },
 });
