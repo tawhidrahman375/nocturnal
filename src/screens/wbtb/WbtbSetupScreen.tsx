@@ -13,9 +13,11 @@ import { PrePermissionModal } from '../../components/PrePermissionModal';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { TimeStepper } from '../../components/TimeStepper';
 import { useAuth } from '../../hooks/useAuth';
+import { useNotificationSettings } from '../../hooks/useNotificationSettings';
 import { useNow } from '../../hooks/useNow';
 import { usePrePermissionGate } from '../../hooks/usePrePermissionGate';
 import { useProfile } from '../../hooks/useProfile';
+import { useWbtbDefaults } from '../../hooks/useWbtbDefaults';
 import { notificationsSupported, requestAlarmPermission } from '../../lib/notifications';
 import { timeOfDayFromMinutes } from '../../lib/realityChecks';
 import {
@@ -48,6 +50,8 @@ export function WbtbSetupScreen({ navigation, route }: Props) {
   const plan = route.params?.plan;
   const { user } = useAuth();
   const { profile } = useProfile();
+  const { defaults: wbtbDefaults } = useWbtbDefaults();
+  const { settings: notificationSettings } = useNotificationSettings();
   const now = useNow(30_000);
   const [sleepAt, setSleepAt] = useState(() =>
     plan ? new Date(plan.sleepAt) : defaultSleepTime(new Date())
@@ -64,6 +68,17 @@ export function WbtbSetupScreen({ navigation, route }: Props) {
   const [permissionBlocked, setPermissionBlocked] = useState(false);
   const alarmPermission = usePrePermissionGate('wbtb-alarm', requestAlarmPermission);
   const [hasAppliedNaturalWakeTime, setHasAppliedNaturalWakeTime] = useState(false);
+  // Same "adjust during render" pattern as the natural-wake-time hydration below: once
+  // per fresh (non-`plan`) open, replace the RECOMMENDED_SLEEP_MINUTES/
+  // DEFAULT_WAKE_WINDOW_MINUTES constants with whatever the user saved on
+  // WbtbDefaultsScreen, before this screen's first paint.
+  const [hasAppliedWbtbDefaults, setHasAppliedWbtbDefaults] = useState(false);
+  if (!plan && !hasAppliedWbtbDefaults && wbtbDefaults) {
+    setHasAppliedWbtbDefaults(true);
+    setSleepMinutes(wbtbDefaults.sleep_duration_minutes as SleepMinutes);
+    setWakeWindowMinutes(wbtbDefaults.wake_window_minutes as WakeWindowMinutes);
+  }
+  const alarmEnabled = notificationSettings?.wbtb_alarm_enabled ?? true;
   // ScreenContainer only reserves the top safe-area inset here (edges={['top']}), so
   // the Panel — and the fixed footer living inside it — can bleed to the literal
   // screen bottom per DESIGN.md §4; the bottom inset is added to the footer by hand.
@@ -93,11 +108,11 @@ export function WbtbSetupScreen({ navigation, route }: Props) {
     setPermissionBlocked(false);
     setSaving(true);
     try {
-      if (!(await alarmPermission.requestWithGate())) {
+      if (alarmEnabled && !(await alarmPermission.requestWithGate())) {
         setPermissionBlocked(true);
         return;
       }
-      await planSession({ userId: user.id, sleepAt, wakeAt, wakeWindowMinutes, technique });
+      await planSession({ userId: user.id, sleepAt, wakeAt, wakeWindowMinutes, technique, alarmEnabled });
       navigation.goBack();
     } catch (e) {
       setError((e as Error).message);
@@ -211,6 +226,10 @@ export function WbtbSetupScreen({ navigation, route }: Props) {
           {!notificationsSupported ? (
             <Text style={[typography.label, styles.caption]}>
               Alarms only ring in the iOS and Android apps. Your session will still be saved.
+            </Text>
+          ) : !alarmEnabled ? (
+            <Text style={[typography.label, styles.caption]}>
+              Your WBTB alarm is off in Notification settings — this session will save without one.
             </Text>
           ) : null}
           <Button

@@ -21,7 +21,9 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "permissions": ["android.permission.SCHEDULE_EXACT_ALARM"],
+      "permissions": [
+        "android.permission.SCHEDULE_EXACT_ALARM"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -36,6 +38,12 @@
         }
       ],
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Nocturnal uses your photo library to set a profile picture."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#0A0E1A",
@@ -45,7 +53,8 @@
             "backgroundColor": "#0A0E1A"
           }
         }
-      ]
+      ],
+      "expo-sharing"
     ]
   }
 }

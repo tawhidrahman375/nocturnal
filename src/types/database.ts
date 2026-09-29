@@ -167,6 +167,33 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_settings: {
+        Row: {
+          created_at: string
+          mild_prompt_enabled: boolean
+          mild_prompt_time_minutes: number | null
+          updated_at: string
+          user_id: string
+          wbtb_alarm_enabled: boolean
+        }
+        Insert: {
+          created_at?: string
+          mild_prompt_enabled?: boolean
+          mild_prompt_time_minutes?: number | null
+          updated_at?: string
+          user_id: string
+          wbtb_alarm_enabled?: boolean
+        }
+        Update: {
+          created_at?: string
+          mild_prompt_enabled?: boolean
+          mild_prompt_time_minutes?: number | null
+          updated_at?: string
+          user_id?: string
+          wbtb_alarm_enabled?: boolean
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -299,6 +326,30 @@ export type Database = {
           created_at?: string
           id?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      wbtb_defaults: {
+        Row: {
+          created_at: string
+          sleep_duration_minutes: number
+          updated_at: string
+          user_id: string
+          wake_window_minutes: number
+        }
+        Insert: {
+          created_at?: string
+          sleep_duration_minutes?: number
+          updated_at?: string
+          user_id: string
+          wake_window_minutes?: number
+        }
+        Update: {
+          created_at?: string
+          sleep_duration_minutes?: number
+          updated_at?: string
+          user_id?: string
+          wake_window_minutes?: number
         }
         Relationships: []
       }

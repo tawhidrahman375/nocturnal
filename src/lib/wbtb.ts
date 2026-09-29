@@ -23,6 +23,10 @@ export const TECHNIQUE_DESCRIPTIONS: Record<WbtbTechnique, string> = {
 export const SLEEP_DURATION_OPTIONS = [300, 330, 360] as const;
 // Six hours lands late in the fourth ~90 min cycle, where REM periods are longest.
 export const RECOMMENDED_SLEEP_MINUTES = 360;
+// WbtbDefaultsScreen's own starting value before a user has ever saved a default —
+// distinct from RECOMMENDED_SLEEP_MINUTES, which is what WbtbSetupScreen falls back to
+// once no saved default exists at all.
+export const WBTB_DEFAULTS_SLEEP_MINUTES = 330;
 
 export const WAKE_WINDOW_OPTIONS = [20, 25, 30] as const;
 export const DEFAULT_WAKE_WINDOW_MINUTES = 20;

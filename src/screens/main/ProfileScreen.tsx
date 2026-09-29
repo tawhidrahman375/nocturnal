@@ -4,20 +4,23 @@ import {
   Bell,
   ChevronRight,
   Crown,
+  Download,
   Eye,
   FileText,
   Flame,
   LogOut,
   LucideIcon,
   Moon,
+  Plus,
   RotateCcw,
   Shield,
   Trash,
 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { Arrive } from '../../components/Arrive';
+import { Avatar } from '../../components/Avatar';
 import { Card } from '../../components/Card';
 import { DeleteAccountModal } from '../../components/DeleteAccountModal';
 import { NightSky } from '../../components/NightSky';
@@ -25,16 +28,21 @@ import { ScreenContainer } from '../../components/ScreenContainer';
 import { StatPill } from '../../components/StatPill';
 import { useAuth } from '../../hooks/useAuth';
 import { useDreams } from '../../hooks/useDreams';
+import { useNotificationSettings } from '../../hooks/useNotificationSettings';
 import { useProfile } from '../../hooks/useProfile';
 import { useRealityCheckSettings } from '../../hooks/useRealityCheckSettings';
 import { useSubscription } from '../../hooks/useSubscription';
+import { useWbtbDefaults } from '../../hooks/useWbtbDefaults';
+import { pickAvatarImage, uploadAvatar } from '../../lib/avatar';
+import { exportAndDeliverData } from '../../lib/dataExport';
 import { purchasesSupported } from '../../lib/purchases';
-import { formatDuration, formatTime } from '../../lib/wbtb';
+import {
+  DEFAULT_WAKE_WINDOW_MINUTES,
+  formatDuration,
+  formatTime,
+  WBTB_DEFAULTS_SLEEP_MINUTES,
+} from '../../lib/wbtb';
 import { colors, spacing, typography } from '../../theme';
-
-// TODO stub URLs — replace with the real hosted pages before App Store/Play submission
-const PRIVACY_POLICY_URL = 'https://nocturnal.app/privacy';
-const TERMS_OF_SERVICE_URL = 'https://nocturnal.app/terms';
 
 function realityCheckSummary(settings: ReturnType<typeof useRealityCheckSettings>['settings']) {
   if (!settings || !settings.enabled) return 'Off';
@@ -43,6 +51,24 @@ function realityCheckSummary(settings: ReturnType<typeof useRealityCheckSettings
   const end = new Date();
   end.setHours(Math.floor(settings.active_end_minutes / 60), settings.active_end_minutes % 60);
   return `Every ${formatDuration(settings.frequency_minutes)} · ${formatTime(start)} to ${formatTime(end)}`;
+}
+
+function notificationsSummary(
+  notificationSettings: ReturnType<typeof useNotificationSettings>['settings'],
+  realityCheckEnabled: boolean
+) {
+  const mildOn = notificationSettings?.mild_prompt_enabled ?? true;
+  const alarmOn = notificationSettings?.wbtb_alarm_enabled ?? true;
+  const onCount = [mildOn, realityCheckEnabled, alarmOn].filter(Boolean).length;
+  if (onCount === 3) return 'All on';
+  if (onCount === 0) return 'All off';
+  return `${onCount} of 3 on`;
+}
+
+function wbtbDefaultsSummary(defaults: ReturnType<typeof useWbtbDefaults>['defaults']) {
+  const sleepMinutes = defaults?.sleep_duration_minutes ?? WBTB_DEFAULTS_SLEEP_MINUTES;
+  const wakeWindowMinutes = defaults?.wake_window_minutes ?? DEFAULT_WAKE_WINDOW_MINUTES;
+  return `${formatDuration(sleepMinutes)} sleep · ${wakeWindowMinutes} min window`;
 }
 
 function SettingsRow({
@@ -76,7 +102,9 @@ export function ProfileScreen() {
   const { user, signOut, deleteAccount } = useAuth();
   const navigation = useNavigation();
   const { settings } = useRealityCheckSettings();
-  const { profile } = useProfile();
+  const { settings: notificationSettings } = useNotificationSettings();
+  const { defaults: wbtbDefaults } = useWbtbDefaults();
+  const { profile, refresh: refreshProfile } = useProfile();
   const { dreams } = useDreams();
   const { isPro, isLoading: subscriptionLoading, openPaywall, openCustomerCenter, restore } =
     useSubscription();
@@ -101,6 +129,39 @@ export function ProfileScreen() {
     const { error } = await restore();
     setRestoring(false);
     setRestoreMessage(error ?? 'Restored');
+  };
+
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const handleAvatarPress = async () => {
+    if (!user) return;
+    setAvatarError(null);
+    const picked = await pickAvatarImage();
+    if (picked.cancelled) return;
+    setAvatarUploading(true);
+    try {
+      await uploadAvatar(user.id, picked.uri, picked.mimeType);
+      await refreshProfile();
+    } catch (e) {
+      setAvatarError((e as Error).message);
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const handleExportData = async () => {
+    if (!user) return;
+    setExportError(null);
+    setExporting(true);
+    try {
+      await exportAndDeliverData(user.id);
+    } catch (e) {
+      setExportError((e as Error).message);
+    } finally {
+      setExporting(false);
+    }
   };
 
   const [deleteStep, setDeleteStep] = useState<0 | 1 | 2>(0);
@@ -141,8 +202,37 @@ export function ProfileScreen() {
           <View style={styles.heroBlock}>
             <Arrive delay={40}>
               <Card style={styles.card}>
-                <Text style={[typography.label, styles.label]}>Signed in as</Text>
-                <Text style={[typography.bodyMedium, styles.email]}>{user?.email}</Text>
+                <View style={styles.identityRow}>
+                  <AnimatedPressable
+                    onPress={handleAvatarPress}
+                    accessibilityRole="button"
+                    accessibilityLabel="Change profile picture"
+                  >
+                    <View>
+                      <Avatar
+                        url={profile?.avatar_url ?? null}
+                        label={profile?.display_name || user?.email || ''}
+                        size={64}
+                      />
+                      {avatarUploading ? (
+                        <View style={styles.avatarOverlay}>
+                          <ActivityIndicator color={colors.text.primary} size="small" />
+                        </View>
+                      ) : (
+                        <View style={styles.avatarBadge}>
+                          <Plus color={colors.text.onAccent} size={14} strokeWidth={2.5} />
+                        </View>
+                      )}
+                    </View>
+                  </AnimatedPressable>
+                  <View style={styles.identityCopy}>
+                    <Text style={[typography.label, styles.label]}>Signed in as</Text>
+                    <Text style={[typography.bodyMedium, styles.email]}>{user?.email}</Text>
+                  </View>
+                </View>
+                {avatarError ? (
+                  <Text style={[typography.label, styles.avatarError]}>{avatarError}</Text>
+                ) : null}
               </Card>
             </Arrive>
 
@@ -170,11 +260,21 @@ export function ProfileScreen() {
             </Arrive>
 
             <Arrive delay={160}>
-              <SettingsRow icon={Bell} label="Notifications" caption="Coming soon" />
+              <SettingsRow
+                icon={Bell}
+                label="Notifications"
+                caption={notificationsSummary(notificationSettings, settings?.enabled ?? true)}
+                onPress={() => navigation.navigate('NotificationSettings')}
+              />
             </Arrive>
 
             <Arrive delay={200}>
-              <SettingsRow icon={AlarmClock} label="WBTB defaults" caption="Coming soon" />
+              <SettingsRow
+                icon={AlarmClock}
+                label="WBTB defaults"
+                caption={wbtbDefaultsSummary(wbtbDefaults)}
+                onPress={() => navigation.navigate('WbtbDefaults')}
+              />
             </Arrive>
 
             <Arrive delay={240}>
@@ -199,7 +299,7 @@ export function ProfileScreen() {
               <SettingsRow
                 icon={Shield}
                 label="Privacy Policy"
-                onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+                onPress={() => navigation.navigate('LegalDocument', { doc: 'privacy' })}
               />
             </Arrive>
 
@@ -207,7 +307,16 @@ export function ProfileScreen() {
               <SettingsRow
                 icon={FileText}
                 label="Terms of Service"
-                onPress={() => Linking.openURL(TERMS_OF_SERVICE_URL)}
+                onPress={() => navigation.navigate('LegalDocument', { doc: 'terms' })}
+              />
+            </Arrive>
+
+            <Arrive delay={340} style={styles.legalGroup}>
+              <SettingsRow
+                icon={Download}
+                label="Export my data"
+                caption={exporting ? 'Preparing export…' : (exportError ?? undefined)}
+                onPress={exporting ? undefined : handleExportData}
               />
             </Arrive>
 
@@ -270,6 +379,42 @@ const styles = StyleSheet.create({
   card: {
     gap: spacing.xs,
     marginBottom: spacing.lg,
+  },
+  identityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  identityCopy: {
+    flex: 1,
+    gap: spacing.xs / 2,
+  },
+  avatarOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 32,
+    backgroundColor: 'rgba(10, 13, 24, 0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // A visible affordance that the avatar is tappable — no border, per DESIGN.md; the
+  // accent fill alone (same as a primary Button) reads as the actionable spot.
+  avatarBadge: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.accent.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarError: {
+    color: colors.status.danger,
   },
   statsRow: {
     flexDirection: 'row',

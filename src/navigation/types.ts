@@ -30,6 +30,9 @@ export type AppStackParamList = {
   BeginnerTrack: undefined;
   MildPrompt: undefined;
   CoachChat: undefined;
+  NotificationSettings: undefined;
+  WbtbDefaults: undefined;
+  LegalDocument: { doc: 'privacy' | 'terms' };
 };
 
 declare global {

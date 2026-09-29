@@ -51,6 +51,9 @@ export async function planSession(input: {
   wakeAt: Date;
   wakeWindowMinutes: number;
   technique: WbtbTechnique;
+  // Defaults true so the one other thing that could call this without passing it
+  // (there is none today, but this keeps the alarm as the safe default) still rings.
+  alarmEnabled?: boolean;
 }) {
   const existing = await fetchOpenSession();
   if (existing) await cancelSession(existing);
@@ -68,11 +71,13 @@ export async function planSession(input: {
     .single();
   if (error) throw new Error(error.message);
 
-  try {
-    await scheduleAlarm(data.id, input.wakeAt);
-  } catch (e) {
-    await updateSession(data.id, { status: 'cancelled' });
-    throw e;
+  if (input.alarmEnabled ?? true) {
+    try {
+      await scheduleAlarm(data.id, input.wakeAt);
+    } catch (e) {
+      await updateSession(data.id, { status: 'cancelled' });
+      throw e;
+    }
   }
   return data;
 }

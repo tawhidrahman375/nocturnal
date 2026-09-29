@@ -1,0 +1,135 @@
+export type LegalSection = {
+  heading: string;
+  paragraphs?: string[];
+  bullets?: string[];
+};
+
+export type LegalDoc = {
+  title: string;
+  lastUpdated: string;
+  sections: LegalSection[];
+  contactEmail: string;
+};
+
+const CONTACT_EMAIL = 'nocturnalappsupport@gmail.com';
+
+export const PRIVACY_POLICY: LegalDoc = {
+  title: 'Privacy Policy',
+  lastUpdated: '29 September 2026',
+  contactEmail: CONTACT_EMAIL,
+  sections: [
+    {
+      heading: 'Who we are',
+      paragraphs: [
+        `Nocturnal is a lucid dreaming app developed and operated as an independent app. For any privacy-related questions, contact us at ${CONTACT_EMAIL}.`,
+      ],
+    },
+    {
+      heading: 'What data we collect',
+      bullets: [
+        'Email address and password (for your account)',
+        'Dream journal entries and related content you write',
+        'App usage data (streaks, techniques used, session activity)',
+        'Device information (operating system, app version)',
+      ],
+    },
+    {
+      heading: 'Why we collect it',
+      bullets: [
+        'To provide and personalise the app experience',
+        'To power AI features (dream sign detection, insights, coach chat) using your journal data',
+        'To process your subscription via RevenueCat',
+      ],
+    },
+    {
+      heading: 'Who we share it with',
+      bullets: [
+        'Supabase (database and file storage)',
+        'Anthropic (AI features — your journal data is sent to the Claude API to generate insights and coach responses)',
+        'RevenueCat (subscription management)',
+        'PostHog (anonymous usage analytics)',
+      ],
+      paragraphs: ['We do not sell your data. Ever.'],
+    },
+    {
+      heading: 'How long we keep it',
+      paragraphs: [
+        'We keep your data for as long as your account is active. You can delete your account at any time from the Profile screen, which permanently deletes all your data.',
+      ],
+    },
+    {
+      heading: 'Your rights',
+      paragraphs: [
+        `You have the right to access, correct, or delete your personal data. Email us at ${CONTACT_EMAIL} to make a request. If you are in the UK or EU, you also have the right to lodge a complaint with the ICO (ico.org.uk).`,
+      ],
+    },
+    {
+      heading: 'Children',
+      paragraphs: [
+        'Nocturnal is not intended for users under 13. We do not knowingly collect data from children under 13.',
+      ],
+    },
+    {
+      heading: 'Changes',
+      paragraphs: ['We may update this policy. We will notify you of significant changes via the app.'],
+    },
+  ],
+};
+
+export const TERMS_OF_SERVICE: LegalDoc = {
+  title: 'Terms of Service',
+  lastUpdated: '29 September 2026',
+  contactEmail: CONTACT_EMAIL,
+  sections: [
+    {
+      heading: 'What Nocturnal is',
+      paragraphs: [
+        'Nocturnal is a lucid dreaming app that provides dream journaling, technique guidance, AI-powered insights, and a coaching feature. By using the app you agree to these terms.',
+      ],
+    },
+    {
+      heading: 'Your account',
+      paragraphs: [
+        'You are responsible for keeping your account credentials secure. You must be at least 13 years old to use Nocturnal.',
+      ],
+    },
+    {
+      heading: 'Subscriptions',
+      paragraphs: [
+        "Nocturnal offers a Pro subscription billed monthly. Payment is processed through the App Store or Google Play. Your subscription renews automatically unless cancelled at least 24 hours before the end of the billing period. You can manage or cancel your subscription in your device's subscription settings at any time.",
+      ],
+    },
+    {
+      heading: 'Refunds',
+      paragraphs: [
+        `Refunds are handled by Apple or Google depending on where you purchased. We do not process refunds directly. If you have an issue, contact us at ${CONTACT_EMAIL} and we will do our best to help.`,
+      ],
+    },
+    {
+      heading: 'AI features',
+      paragraphs: [
+        'Nocturnal uses AI to generate personalised insights, mantras, technique recommendations, and coach responses. These are for informational and entertainment purposes only. They are not medical or therapeutic advice. If you have a sleep disorder or mental health concern, speak to a qualified professional.',
+      ],
+    },
+    {
+      heading: 'Acceptable use',
+      paragraphs: [
+        'You may not misuse the app, attempt to reverse engineer it, or use it in any way that violates applicable law.',
+      ],
+    },
+    {
+      heading: 'Termination',
+      paragraphs: ['We reserve the right to suspend or terminate accounts that violate these terms.'],
+    },
+    {
+      heading: 'Disclaimer',
+      paragraphs: [
+        'Nocturnal is provided as-is. We make no guarantees about the accuracy of AI-generated content or that using the app will result in lucid dreams.',
+      ],
+    },
+    {
+      heading: 'Governing law',
+      paragraphs: ['These terms are governed by the laws of England and Wales.'],
+    },
+  ],
+};
