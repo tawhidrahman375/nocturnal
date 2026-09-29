@@ -1,6 +1,8 @@
-import { Moon, Plus, Sparkles } from 'lucide-react-native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { Mic, Moon, Plus, Sparkles } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 import { Arrive } from '../../components/Arrive';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -16,6 +18,8 @@ import { useDreamSignReveal } from '../../hooks/useDreamSignReveal';
 import { useMilestoneCheck } from '../../hooks/useMilestoneCheck';
 import { useReviewPrompt } from '../../hooks/useReviewPrompt';
 import { parseDreamCategory } from '../../lib/dreamCategories';
+import { deleteRecording, notifyRecordingsChanged } from '../../lib/dreamRecordings';
+import { MainTabParamList } from '../../navigation/types';
 import { colors, radius, spacing, typography } from '../../theme';
 
 // dreamed_at is stored as a local "YYYY-MM-DD" day (see lib/streaks.ts), so it's parsed
@@ -51,8 +55,19 @@ export function JournalScreen() {
   const { user } = useAuth();
   const { dreams, addDream } = useDreams();
   const [sheetVisible, setSheetVisible] = useState(false);
+  const route = useRoute<RouteProp<MainTabParamList, 'Journal'>>();
+  const tabNavigation = useNavigation<BottomTabNavigationProp<MainTabParamList, 'Journal'>>();
+  // Untyped, like CoachChatEntry on Insights: RecordDream is a root stack screen, not a tab.
+  const stackNavigation = useNavigation();
+  // Set by the voice-recording review sheet ("Save to journal"): opens the new-entry sheet
+  // already filled with the transcript, and remembers which recording it came from.
+  const newDream = route.params?.newDream;
   const sections = useMemo(() => groupDreamsByDate(dreams), [dreams]);
   const openSheet = () => setSheetVisible(true);
+  const closeSheet = () => {
+    setSheetVisible(false);
+    if (newDream) tabNavigation.setParams({ newDream: undefined });
+  };
   const { milestone, checkLucidDreamMilestone, dismissMilestone } = useMilestoneCheck();
   const { currentSign, checkForNewSigns, dismissCurrentSign } = useDreamSignReveal();
   const { triggerReviewPrompt } = useReviewPrompt();
@@ -72,9 +87,24 @@ export function JournalScreen() {
       <NightSky intensity="subtle" style={styles.sky}>
         <Arrive style={styles.header}>
           <Text style={[typography.heroTitle, styles.title]}>Journal</Text>
-          <Pressable style={styles.addButton} onPress={openSheet} hitSlop={8}>
-            <Plus color="#FFFFFF" size={22} strokeWidth={2} />
-          </Pressable>
+          <View style={styles.headerActions}>
+            {/* iOS has no notification to record from, so it gets a button here instead.
+                Android records from its persistent notification. */}
+            {Platform.OS === 'ios' ? (
+              <Pressable
+                style={styles.recordButton}
+                onPress={() => stackNavigation.navigate('RecordDream')}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Record a dream"
+              >
+                <Mic color={colors.text.primary} size={20} strokeWidth={1.75} />
+              </Pressable>
+            ) : null}
+            <Pressable style={styles.addButton} onPress={openSheet} hitSlop={8} accessibilityLabel="Add a dream">
+              <Plus color="#FFFFFF" size={22} strokeWidth={2} />
+            </Pressable>
+          </View>
         </Arrive>
 
         {dreams.length === 0 ? (
@@ -97,10 +127,18 @@ export function JournalScreen() {
       </NightSky>
 
       <NewDreamSheet
-        visible={sheetVisible}
-        onClose={() => setSheetVisible(false)}
+        key={newDream?.key ?? 'blank'}
+        visible={sheetVisible || !!newDream}
+        initialContent={newDream?.content}
+        onClose={closeSheet}
         onSubmit={async (dream) => {
-          await addDream(dream);
+          const { error } = await addDream(dream);
+          // The entry is saved, so the recording it came from is finished with. Left in
+          // place on a failed save, so nothing is lost.
+          if (!error && newDream) {
+            deleteRecording(newDream.recordingName);
+            notifyRecordingsChanged();
+          }
           if (dream.is_lucid && user) checkLucidDreamMilestone(user.id);
           if (user) checkForNewSigns(user.id);
         }}
@@ -182,6 +220,20 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text.primary,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  // Small floating controls are frosted glass in DESIGN.md: a translucent white fill.
+  recordButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   addButton: {
     width: 44,

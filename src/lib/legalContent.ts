@@ -32,6 +32,7 @@ export const PRIVACY_POLICY: LegalDoc = {
         'App usage data (streaks, techniques used, session activity)',
         'Device information (operating system, app version)',
         'Sleep insights generated from your Apple Health or Health Connect sleep data, if you choose to connect it (see Health and sleep data below)',
+        'Voice recordings of your dreams, only if you choose to record one (see Voice recordings below)',
       ],
     },
     {
@@ -45,11 +46,20 @@ export const PRIVACY_POLICY: LegalDoc = {
       ],
     },
     {
+      heading: 'Voice recordings',
+      paragraphs: [
+        'You can record a dream by voice. Nocturnal only uses your microphone while you are recording, and only after you tap the record button. You can decline microphone access and type your dreams instead.',
+        'A recording is saved on your device. When you next open the app, it is uploaded to our storage and sent to OpenAI, which turns the speech into text. We delete the uploaded audio as soon as it has been transcribed, and in any case within 24 hours. The text is offered to you to edit and save as a journal entry.',
+        'The recording stays on your device until you save the entry to your journal or discard it, and is then deleted. If transcription is unavailable, nothing is sent and you can type the dream in yourself. We do not use your recordings for advertising or marketing.',
+      ],
+    },
+    {
       heading: 'Why we collect it',
       bullets: [
         'To provide and personalise the app experience',
         'To power AI features (dream sign detection, insights, coach chat) using your journal data',
         'To show how your sleep relates to your lucid dreams, if you connect Apple Health or Health Connect',
+        'To turn your voice recordings into text, if you record a dream by voice',
         'To process your subscription via RevenueCat',
       ],
     },
@@ -58,6 +68,7 @@ export const PRIVACY_POLICY: LegalDoc = {
       bullets: [
         'Supabase (database and file storage)',
         'Anthropic (AI features — your journal data is sent to the Claude API to generate insights and coach responses. If you use sleep insights, summary numbers about your sleep are sent too, never your sleep records)',
+        'OpenAI (speech-to-text: your voice recordings are sent to OpenAI to be transcribed, if you record a dream by voice)',
         'RevenueCat (subscription management)',
         'PostHog (anonymous usage analytics)',
       ],
@@ -66,7 +77,7 @@ export const PRIVACY_POLICY: LegalDoc = {
     {
       heading: 'How long we keep it',
       paragraphs: [
-        'We keep your data for as long as your account is active. You can delete your account at any time from the Profile screen, which permanently deletes all your data. We do not store your sleep records, only the written sleep insight, which is deleted with your account.',
+        'We keep your data for as long as your account is active. You can delete your account at any time from the Profile screen, which permanently deletes all your data. We do not store your sleep records, only the written sleep insight, which is deleted with your account. Voice recordings are deleted from our servers within 24 hours of upload, and from your device once you save or discard them.',
       ],
     },
     {

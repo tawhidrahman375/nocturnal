@@ -7,6 +7,9 @@ import { colors, radius, spacing, typography } from '../theme';
 
 type NewDreamSheetProps = {
   visible: boolean;
+  // Pre-fills "What happened?" (a voice recording's transcript). Read once when the sheet
+  // mounts, so the caller remounts it with a new `key` to hand it a different one.
+  initialContent?: string;
   onClose: () => void;
   onSubmit: (dream: {
     title: string;
@@ -20,9 +23,9 @@ function parseTags(input: string) {
   return [...new Set(input.split(',').map((tag) => tag.trim()).filter(Boolean))];
 }
 
-export function NewDreamSheet({ visible, onClose, onSubmit }: NewDreamSheetProps) {
+export function NewDreamSheet({ visible, initialContent, onClose, onSubmit }: NewDreamSheetProps) {
   const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState(initialContent ?? '');
   const [tagsInput, setTagsInput] = useState('');
   const [isLucid, setIsLucid] = useState(false);
   const [saving, setSaving] = useState(false);

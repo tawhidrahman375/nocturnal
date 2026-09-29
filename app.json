@@ -74,6 +74,13 @@
             "minSdkVersion": 26
           }
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Nocturnal records your voice so you can capture a dream the moment you wake. Recordings are transcribed, then deleted.",
+          "enableBackgroundRecording": false
+        }
       ]
     ]
   }

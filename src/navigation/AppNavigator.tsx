@@ -6,6 +6,7 @@ import { CoachChatScreen } from '../screens/coach/CoachChatScreen';
 import { LegalDocumentScreen } from '../screens/legal/LegalDocumentScreen';
 import { MildPromptScreen } from '../screens/mild-prompt/MildPromptScreen';
 import { NotificationSettingsScreen } from '../screens/notifications/NotificationSettingsScreen';
+import { RecordDreamScreen } from '../screens/record/RecordDreamScreen';
 import { RealityCheckSetupScreen } from '../screens/reality-check/RealityCheckSetupScreen';
 import { WbtbDefaultsScreen } from '../screens/wbtb/WbtbDefaultsScreen';
 import { WbtbSessionScreen } from '../screens/wbtb/WbtbSessionScreen';
@@ -32,6 +33,11 @@ export function AppNavigator() {
       <Stack.Screen
         name="WbtbSession"
         component={WbtbSessionScreen}
+        options={{ presentation: 'fullScreenModal', gestureEnabled: false, animation: 'fade' }}
+      />
+      <Stack.Screen
+        name="RecordDream"
+        component={RecordDreamScreen}
         options={{ presentation: 'fullScreenModal', gestureEnabled: false, animation: 'fade' }}
       />
       <Stack.Screen name="BeginnerTrack" component={BeginnerTrackScreen} />

@@ -30,6 +30,10 @@ export function configureNotifications() {
     handleNotification: async (notification) => {
       // The session screen already shows the countdown finishing; just chime.
       const isWindowEnd = notification.request.content.data?.type === 'wbtb-window-end';
+      // The quick-record notification lives quietly in the shade: never a banner or a sound.
+      if (notification.request.content.data?.type === 'quick-record') {
+        return { shouldShowBanner: false, shouldShowList: true, shouldPlaySound: false, shouldSetBadge: false };
+      }
       return {
         shouldShowBanner: !isWindowEnd,
         shouldShowList: !isWindowEnd,

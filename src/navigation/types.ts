@@ -10,7 +10,9 @@ export type AuthStackParamList = {
 
 export type MainTabParamList = {
   Home: undefined;
-  Journal: undefined;
+  // `newDream` opens the new-entry sheet pre-filled, from the voice-recording review sheet.
+  // `recordingName` ties the entry to its audio so the recording is removed once it is saved.
+  Journal: { newDream?: { key: string; content: string; recordingName: string } } | undefined;
   Insights: undefined;
   Profile: undefined;
 };
@@ -27,6 +29,7 @@ export type AppStackParamList = {
   WbtbSetup: { plan?: WbtbPlan } | undefined;
   WbtbSession: { sessionId: string };
   RealityCheckSetup: undefined;
+  RecordDream: undefined;
   BeginnerTrack: undefined;
   MildPrompt: undefined;
   CoachChat: undefined;

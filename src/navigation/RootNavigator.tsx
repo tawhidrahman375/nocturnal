@@ -3,11 +3,14 @@ import { useState } from 'react';
 import { AppNavigator } from './AppNavigator';
 import { AuthNavigator } from './AuthNavigator';
 import { navigationRef } from './navigationRef';
+import { PendingRecordingSheet } from '../components/PendingRecordingSheet';
+import { QuickRecordSetup } from '../components/QuickRecordSetup';
 import { useAuth } from '../hooks/useAuth';
 import { useMildPromptNotificationRouting } from '../hooks/useMildPromptNotificationRouting';
 import { useMildPromptScheduling } from '../hooks/useMildPromptScheduling';
 import { useOnboardingGate } from '../hooks/useOnboardingGate';
 import { usePurchasesIdentity } from '../hooks/usePurchasesIdentity';
+import { useQuickRecordNotificationRouting } from '../hooks/useQuickRecordNotificationRouting';
 import { useRealityCheckNotificationRouting } from '../hooks/useRealityCheckNotificationRouting';
 import { useWbtbNotificationRouting } from '../hooks/useWbtbNotificationRouting';
 import { OnboardingQuizScreen } from '../screens/onboarding/OnboardingQuizScreen';
@@ -33,6 +36,9 @@ export function RootNavigator() {
   useWbtbNotificationRouting(!!session && isNavReady);
   useRealityCheckNotificationRouting(!!session);
   useMildPromptNotificationRouting(!!session && isNavReady);
+  // The recording screen lives in the signed-in app stack, so only route to it once that
+  // stack (and not the onboarding quiz) is what is on screen.
+  useQuickRecordNotificationRouting(!!session && isNavReady && needsOnboarding === false);
   useMildPromptScheduling(!!session);
   usePurchasesIdentity(session);
 
@@ -41,7 +47,11 @@ export function RootNavigator() {
   ) : needsOnboarding === null ? null : needsOnboarding ? (
     <OnboardingQuizScreen onComplete={markComplete} />
   ) : (
-    <AppNavigator />
+    <>
+      <AppNavigator />
+      <QuickRecordSetup />
+      <PendingRecordingSheet />
+    </>
   );
 
   return (

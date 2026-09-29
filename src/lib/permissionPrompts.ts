@@ -1,11 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export type PrePermissionKind = 'reality-check' | 'wbtb-alarm' | 'mild-prompt';
+export type PrePermissionKind = 'reality-check' | 'wbtb-alarm' | 'mild-prompt' | 'quick-record';
 
 const STORAGE_KEYS: Record<PrePermissionKind, string> = {
   'reality-check': 'nocturnal:pre-permission:reality-check',
   'wbtb-alarm': 'nocturnal:pre-permission:wbtb-alarm',
   'mild-prompt': 'nocturnal:pre-permission:mild-prompt',
+  'quick-record': 'nocturnal:pre-permission:quick-record',
 };
 
 // Tracks, per device, whether the custom explanation screen for a permission has

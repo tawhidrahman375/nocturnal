@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { AlarmClock, Eye, LucideIcon, Moon, X } from 'lucide-react-native';
-import { useState } from 'react';
+import { AlarmClock, Eye, LucideIcon, Mic, Moon, X } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
 import { Linking, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { Arrive } from '../../components/Arrive';
@@ -21,6 +21,14 @@ import {
   requestMildPromptPermission,
   requestRealityCheckPermission,
 } from '../../lib/notifications';
+import {
+  hideQuickRecordNotification,
+  isQuickRecordEnabled,
+  quickRecordSupported,
+  requestQuickRecordPermission,
+  setQuickRecordEnabled,
+  showQuickRecordNotification,
+} from '../../lib/quickRecord';
 import { minutesSinceMidnight, timeOfDayFromMinutes } from '../../lib/realityChecks';
 import { AppStackParamList } from '../../navigation/types';
 import { colors, spacing, typography } from '../../theme';
@@ -104,6 +112,33 @@ export function NotificationSettingsScreen({ navigation }: Props) {
   const mildPromptPermission = usePrePermissionGate('mild-prompt', requestMildPromptPermission);
   const realityCheckPermission = usePrePermissionGate('reality-check', requestRealityCheckPermission);
   const alarmPermission = usePrePermissionGate('wbtb-alarm', requestAlarmPermission);
+
+  // Android's persistent "Tap to record a dream" notification. Unlike the rest of this screen
+  // it applies straight away rather than on Save, and it is remembered on this device only
+  // (the notification itself only exists here).
+  const [quickRecordEnabled, setQuickRecordEnabledState] = useState(true);
+  const quickRecordPermission = usePrePermissionGate('quick-record', requestQuickRecordPermission);
+  useEffect(() => {
+    if (!quickRecordSupported) return;
+    let ignore = false;
+    isQuickRecordEnabled().then((enabled) => {
+      if (!ignore) setQuickRecordEnabledState(enabled);
+    });
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const handleQuickRecordToggle = async (value: boolean) => {
+    setQuickRecordEnabledState(value);
+    await setQuickRecordEnabled(value);
+    if (!value) {
+      await hideQuickRecordNotification();
+      return;
+    }
+    if (await quickRecordPermission.requestWithGate()) await showQuickRecordNotification();
+    else setPermissionBlocked(true);
+  };
 
   const handleSave = async () => {
     setError(null);
@@ -201,6 +236,18 @@ export function NotificationSettingsScreen({ navigation }: Props) {
             onValueChange={setWbtbAlarmEnabled}
           />
         </Arrive>
+
+        {quickRecordSupported ? (
+          <Arrive delay={160}>
+            <ToggleRow
+              icon={Mic}
+              title="Quick record"
+              body="A quiet notification you can tap to record a dream the moment you wake."
+              value={quickRecordEnabled}
+              onValueChange={handleQuickRecordToggle}
+            />
+          </Arrive>
+        ) : null}
       </ScrollView>
 
       <View style={styles.footer}>
@@ -253,6 +300,15 @@ export function NotificationSettingsScreen({ navigation }: Props) {
         ctaLabel="Allow Alarm"
         onAllow={alarmPermission.handleAllow}
         onDismiss={alarmPermission.handleDismiss}
+      />
+      <PrePermissionModal
+        visible={quickRecordPermission.visible}
+        icon={Mic}
+        headline="Record a dream before it fades"
+        body="Nocturnal keeps one quiet notification in your shade, so you can record a dream the moment you wake, even from the lock screen. Allow notifications to turn it on."
+        ctaLabel="Allow Quick Record"
+        onAllow={quickRecordPermission.handleAllow}
+        onDismiss={quickRecordPermission.handleDismiss}
       />
     </ScreenContainer>
   );
