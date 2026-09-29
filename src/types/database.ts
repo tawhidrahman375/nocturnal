@@ -353,6 +353,27 @@ export type Database = {
         }
         Relationships: []
       }
+      sleep_correlations: {
+        Row: {
+          content: string
+          generated_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          generated_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          generated_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       technique_recommendations: {
         Row: {
           attempt_count: number

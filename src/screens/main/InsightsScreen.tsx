@@ -1,6 +1,7 @@
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
 import {
+  BedDouble,
   CalendarDays,
   CalendarRange,
   ChevronRight,
@@ -13,9 +14,10 @@ import {
   Trophy,
   Waves,
 } from 'lucide-react-native';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { Arrive } from '../../components/Arrive';
+import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { EmptyState } from '../../components/EmptyState';
 import { NightSky } from '../../components/NightSky';
@@ -27,7 +29,17 @@ import { MIN_DREAMS_FOR_INSIGHT, useDreamInsight } from '../../hooks/useDreamIns
 import { useDreams } from '../../hooks/useDreams';
 import { useProfile } from '../../hooks/useProfile';
 import { useProgressNarratives } from '../../hooks/useProgressNarratives';
+import { SleepInsightState, useSleepInsight } from '../../hooks/useSleepInsight';
 import { useTechniqueRecommendation } from '../../hooks/useTechniqueRecommendation';
+import { openHealthConnectInstall, openHealthSettings } from '../../lib/sleepData';
+import {
+  SLEEP_INSIGHT_CONNECT,
+  SLEEP_INSIGHT_ERROR,
+  SLEEP_INSIGHT_HEALTH_CONNECT_MISSING,
+  SLEEP_INSIGHT_HEALTH_CONNECT_UPDATE,
+  SLEEP_INSIGHT_NOT_ENOUGH_DATA,
+  SLEEP_INSIGHT_UNSUPPORTED,
+} from '../../lib/sleepInsight';
 import { MainTabParamList } from '../../navigation/types';
 import { colors, spacing, typography } from '../../theme';
 
@@ -131,6 +143,75 @@ function ProgressNarrativeCards({ narratives }: { narratives: ReturnType<typeof 
   );
 }
 
+// Where the health data cannot simply be read yet, the card says why and offers the one
+// action that helps, all inline. Health Connect being absent gets the Play Store; a
+// permission that was already asked for (and either denied or, on iOS, unreadable) gets the
+// place to change it, since asking again would not show a prompt.
+function SleepInsightCard({ state, onConnect }: { state: SleepInsightState; onConnect: () => void }) {
+  const alreadyAskedHint =
+    Platform.OS === 'ios'
+      ? 'If you turned this off, allow Sleep for Nocturnal in Health, under Sharing, then Apps.'
+      : 'If you turned this off, allow Nocturnal to read Sleep in Health Connect.';
+
+  let body: React.ReactNode;
+  switch (state.kind) {
+    case 'loading':
+      body = <SkeletonLines accessibilityLabel="Loading sleep insight" />;
+      break;
+    case 'ready':
+      body = <Text style={[typography.body, styles.insightBody]}>{state.content}</Text>;
+      break;
+    case 'needs-permission':
+      body = (
+        <>
+          <Text style={[typography.body, styles.insightPending]}>{SLEEP_INSIGHT_CONNECT}</Text>
+          {state.alreadyAsked ? <Text style={[typography.label, styles.insightPending]}>{alreadyAskedHint}</Text> : null}
+          <Button
+            size="sm"
+            style={styles.sleepAction}
+            label={state.alreadyAsked ? (Platform.OS === 'ios' ? 'Open Health' : 'Open Health Connect') : 'Connect'}
+            onPress={state.alreadyAsked ? () => openHealthSettings() : onConnect}
+          />
+        </>
+      );
+      break;
+    case 'health-connect-missing':
+      body = (
+        <>
+          <Text style={[typography.body, styles.insightPending]}>
+            {state.needsUpdate ? SLEEP_INSIGHT_HEALTH_CONNECT_UPDATE : SLEEP_INSIGHT_HEALTH_CONNECT_MISSING}
+          </Text>
+          <Button
+            size="sm"
+            style={styles.sleepAction}
+            label={state.needsUpdate ? 'Update Health Connect' : 'Get Health Connect'}
+            onPress={() => openHealthConnectInstall()}
+          />
+        </>
+      );
+      break;
+    case 'not-enough-data':
+      body = <Text style={[typography.body, styles.insightPending]}>{SLEEP_INSIGHT_NOT_ENOUGH_DATA}</Text>;
+      break;
+    case 'unsupported':
+      body = <Text style={[typography.body, styles.insightPending]}>{SLEEP_INSIGHT_UNSUPPORTED}</Text>;
+      break;
+    case 'error':
+      body = <Text style={[typography.body, styles.insightPending]}>{SLEEP_INSIGHT_ERROR}</Text>;
+      break;
+  }
+
+  return (
+    <Card style={styles.insightCard} elevated>
+      <View style={styles.insightHeader}>
+        <BedDouble color={colors.accent.primary} size={16} strokeWidth={1.75} />
+        <Text style={[typography.label, styles.insightLabel]}>Sleep and dreams</Text>
+      </View>
+      {body}
+    </Card>
+  );
+}
+
 export function InsightsScreen() {
   const { dreams, isLoading: dreamsLoading } = useDreams();
   const { profile } = useProfile();
@@ -138,6 +219,7 @@ export function InsightsScreen() {
 
   const totalDreams = dreams.length;
   const narratives = useProgressNarratives(totalDreams, dreamsLoading);
+  const sleep = useSleepInsight(dreams, dreamsLoading);
   const { insight, isLoading: insightLoading } = useDreamInsight(totalDreams);
   const lucidDreams = dreams.filter((dream) => dream.is_lucid).length;
   const lucidRate = totalDreams > 0 ? Math.round((lucidDreams / totalDreams) * 100) : 0;
@@ -173,6 +255,9 @@ export function InsightsScreen() {
             <Arrive delay={110}>
               <ProgressNarrativeCards narratives={narratives} />
             </Arrive>
+            <Arrive delay={130}>
+              <SleepInsightCard state={sleep.state} onConnect={sleep.connect} />
+            </Arrive>
           </ScrollView>
         ) : (
           <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -202,8 +287,12 @@ export function InsightsScreen() {
               <ProgressNarrativeCards narratives={narratives} />
             </Arrive>
 
+            <Arrive delay={120}>
+              <SleepInsightCard state={sleep.state} onConnect={sleep.connect} />
+            </Arrive>
+
             {totalDreams >= MIN_DREAMS_FOR_INSIGHT ? (
-              <Arrive delay={130}>
+              <Arrive delay={140}>
                 <Card style={styles.insightCard} elevated>
                   <View style={styles.insightHeader}>
                     <Sparkles color={colors.accent.primary} size={16} strokeWidth={1.75} />
@@ -277,6 +366,9 @@ const styles = StyleSheet.create({
   },
   narrativeStack: {
     gap: spacing.md,
+  },
+  sleepAction: {
+    marginTop: spacing.xs,
   },
   insightHeader: {
     flexDirection: 'row',
