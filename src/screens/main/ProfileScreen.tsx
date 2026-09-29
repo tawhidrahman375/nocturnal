@@ -25,8 +25,10 @@ import { Card } from '../../components/Card';
 import { DeleteAccountModal } from '../../components/DeleteAccountModal';
 import { NightSky } from '../../components/NightSky';
 import { ScreenContainer } from '../../components/ScreenContainer';
+import { SkeletonLines } from '../../components/SkeletonLines';
 import { StatPill } from '../../components/StatPill';
 import { useAuth } from '../../hooks/useAuth';
+import { useDreamProfile } from '../../hooks/useDreamProfile';
 import { useDreams } from '../../hooks/useDreams';
 import { useNotificationSettings } from '../../hooks/useNotificationSettings';
 import { useProfile } from '../../hooks/useProfile';
@@ -105,7 +107,8 @@ export function ProfileScreen() {
   const { settings: notificationSettings } = useNotificationSettings();
   const { defaults: wbtbDefaults } = useWbtbDefaults();
   const { profile, refresh: refreshProfile } = useProfile();
-  const { dreams } = useDreams();
+  const { dreams, isLoading: dreamsLoading } = useDreams();
+  const dreamProfile = useDreamProfile(dreams.length, dreamsLoading);
   const { isPro, isLoading: subscriptionLoading, openPaywall, openCustomerCenter, restore } =
     useSubscription();
 
@@ -241,6 +244,20 @@ export function ProfileScreen() {
               <StatPill icon={Flame} value={profile?.current_streak ?? 0} label="Day streak" tint={colors.accent.primary} />
               <StatPill icon={Moon} value={lucidDreams} label="Lucid" tint={colors.text.secondary} />
             </Arrive>
+
+            {/* No label on purpose: the text is the card. Left out entirely if the request
+                fails, since the "keep logging" fallback would be wrong for a full journal. */}
+            {dreamProfile.error ? null : (
+              <Arrive delay={100}>
+                <Card style={styles.card}>
+                  {dreamProfile.isLoading ? (
+                    <SkeletonLines lines={2} accessibilityLabel="Loading your dream profile" />
+                  ) : (
+                    <Text style={[typography.body, styles.email]}>{dreamProfile.content}</Text>
+                  )}
+                </Card>
+              </Arrive>
+            )}
           </View>
 
           <View style={styles.settingsGroup}>

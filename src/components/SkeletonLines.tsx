@@ -6,16 +6,20 @@ import { spacing } from '../theme';
 
 // Widths of the placeholder lines, as a share of the container: full, near-full, then a
 // short tail, so it reads as a paragraph that has not arrived yet.
-const LINE_WIDTHS = ['100%', '92%', '58%'] as const;
+const LINE_WIDTHS = {
+  2: ['100%', '64%'],
+  3: ['100%', '92%', '58%'],
+} as const;
 
 type SkeletonLinesProps = {
+  lines?: 2 | 3;
   accessibilityLabel?: string;
 };
 
 // A loading placeholder for a short block of text. Pulses on the reveal duration with the
 // ambient curve (the closest motion tokens to a slow breathe); under reduced motion the
 // bars sit still at a fixed opacity instead.
-export function SkeletonLines({ accessibilityLabel = 'Loading' }: SkeletonLinesProps) {
+export function SkeletonLines({ lines = 3, accessibilityLabel = 'Loading' }: SkeletonLinesProps) {
   const reducedMotion = useReducedMotion();
   const [pulse] = useState(() => new Animated.Value(0));
 
@@ -38,7 +42,7 @@ export function SkeletonLines({ accessibilityLabel = 'Loading' }: SkeletonLinesP
 
   return (
     <View accessible accessibilityRole="progressbar" accessibilityLabel={accessibilityLabel} style={styles.wrap}>
-      {LINE_WIDTHS.map((width) => (
+      {LINE_WIDTHS[lines].map((width) => (
         <Animated.View key={width} style={[styles.line, { width, opacity }]} />
       ))}
     </View>

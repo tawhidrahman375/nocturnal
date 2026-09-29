@@ -25,6 +25,7 @@ export type DataExport = {
   mild_mantras: Tables<'mild_mantras'>[];
   technique_recommendations: Tables<'technique_recommendations'>[];
   progress_narratives: Tables<'progress_narratives'>[];
+  dream_profiles: Tables<'dream_profiles'>[];
   coach_messages: Tables<'coach_messages'>[];
 };
 
@@ -60,6 +61,7 @@ export async function buildDataExport(userId: string): Promise<DataExport> {
     mantrasRes,
     recommendationsRes,
     narrativesRes,
+    dreamProfilesRes,
     coachRes,
   ] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', userId).single(),
@@ -80,6 +82,7 @@ export async function buildDataExport(userId: string): Promise<DataExport> {
       .select('*')
       .eq('user_id', userId)
       .order('generated_at', { ascending: false }),
+    supabase.from('dream_profiles').select('*').eq('user_id', userId).order('generated_at', { ascending: false }),
     supabase.from('coach_messages').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
   ]);
 
@@ -94,6 +97,7 @@ export async function buildDataExport(userId: string): Promise<DataExport> {
     mantrasRes,
     recommendationsRes,
     narrativesRes,
+    dreamProfilesRes,
     coachRes,
   ]) {
     if (res.error) throw new Error(res.error.message);
@@ -123,6 +127,7 @@ export async function buildDataExport(userId: string): Promise<DataExport> {
     mild_mantras: mantrasRes.data ?? [],
     technique_recommendations: recommendationsRes.data ?? [],
     progress_narratives: narrativesRes.data ?? [],
+    dream_profiles: dreamProfilesRes.data ?? [],
     coach_messages: coachRes.data ?? [],
   };
 }

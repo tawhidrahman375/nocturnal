@@ -104,6 +104,27 @@ export type Database = {
         }
         Relationships: []
       }
+      dream_profiles: {
+        Row: {
+          content: string
+          generated_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          generated_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          generated_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       dreams: {
         Row: {
           content: string
