@@ -7,10 +7,10 @@ type DreamCategoryPillProps = {
   category: DreamCategory;
 };
 
-// One small pill per dream card. Most categories are a quiet tinted tag; two are meant
-// to be noticed: sleep paralysis is a solid crimson warning tag with bold white text and
-// an eye, and astral projection carries a soft violet glow (a single static boxShadow,
-// no animation).
+// One small pill per dream card. Most categories are a tinted tag; two are meant to be
+// noticed: sleep paralysis is the loudest thing on the card (a larger solid red tag, all
+// caps, bold white text, an eye, and a red glow), and astral projection carries a soft
+// violet glow. Both glows are a single static boxShadow, no animation.
 export function DreamCategoryPill({ category }: DreamCategoryPillProps) {
   const palette = colors.dreamCategory[category];
   const isSleepParalysis = category === 'sleep paralysis';
@@ -22,11 +22,19 @@ export function DreamCategoryPill({ category }: DreamCategoryPillProps) {
       style={[
         styles.pill,
         { backgroundColor: palette.fill },
+        isSleepParalysis && styles.alertPill,
+        isSleepParalysis && { boxShadow: `0 0 14px ${colors.dreamCategory.sleepParalysisGlow}` },
         isAstral && { boxShadow: `0 0 10px ${colors.dreamCategory.astralGlow}` },
       ]}
     >
-      {isSleepParalysis ? <Eye color={palette.text} size={12} strokeWidth={2.25} /> : null}
-      <Text style={[typography.caption, { color: palette.text }, isSleepParalysis && styles.boldText]}>
+      {isSleepParalysis ? <Eye color={palette.text} size={15} strokeWidth={2.5} /> : null}
+      <Text
+        style={[
+          isSleepParalysis ? typography.label : typography.caption,
+          { color: palette.text },
+          isSleepParalysis && styles.alertText,
+        ]}
+      >
         {DREAM_CATEGORY_LABELS[category]}
       </Text>
     </View>
@@ -43,7 +51,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
   },
-  boldText: {
-    fontWeight: '700',
+  alertPill: {
+    gap: spacing.xs + 2,
+    paddingHorizontal: spacing.md - 2,
+    paddingVertical: spacing.xs,
+    // Keeps the glow from touching the row above and below.
+    marginVertical: 2,
+  },
+  alertText: {
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
 });

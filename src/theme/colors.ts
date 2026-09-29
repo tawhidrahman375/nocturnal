@@ -34,14 +34,16 @@ export const colors = {
     nightmare: { fill: 'rgba(127, 29, 29, 0.42)', text: '#E8A0A0' },
     adventure: { fill: 'rgba(15, 118, 110, 0.4)', text: '#7DE3D6' },
     emotional: { fill: 'rgba(190, 120, 140, 0.2)', text: '#E8A7B8' },
-    surreal: { fill: 'rgba(108, 142, 255, 0.14)', text: '#6C8EFF' },
-    mundane: { fill: 'rgba(139, 156, 199, 0.1)', text: '#8B9CC7' },
+    surreal: { fill: 'rgba(108, 142, 255, 0.3)', text: '#B4C4FF' },
+    mundane: { fill: 'rgba(160, 174, 210, 0.24)', text: '#CBD3EA' },
     recurring: { fill: 'rgba(251, 146, 60, 0.14)', text: '#FDBA74' },
-    'sleep paralysis': { fill: '#B91C1C', text: '#FFFFFF' },
+    'sleep paralysis': { fill: '#E11D2E', text: '#FFFFFF' },
     'astral projection': { fill: 'rgba(109, 40, 217, 0.4)', text: '#C4B5FD' },
-    unknown: { fill: 'rgba(139, 156, 199, 0.06)', text: '#6B7A9C' },
+    unknown: { fill: 'rgba(139, 156, 199, 0.12)', text: '#8B9CC7' },
     // Soft violet halo for astral projection only. Static, so it costs nothing per frame.
     astralGlow: 'rgba(167, 139, 250, 0.55)',
+    // The same idea in red, so the sleep paralysis warning tag reads as a warning at a glance.
+    sleepParalysisGlow: 'rgba(239, 68, 68, 0.7)',
   },
   status: {
     lucid: '#34D399',
