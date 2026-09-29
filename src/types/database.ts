@@ -248,6 +248,30 @@ export type Database = {
         }
         Relationships: []
       }
+      progress_narratives: {
+        Row: {
+          content: string
+          generated_at: string
+          id: string
+          period: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          generated_at?: string
+          id?: string
+          period: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          generated_at?: string
+          id?: string
+          period?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       reality_check_logs: {
         Row: {
           created_at: string

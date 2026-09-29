@@ -1,6 +1,18 @@
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
-import { ChevronRight, Compass, Flame, MessageCircle, Moon, Sparkles, Trophy, Waves } from 'lucide-react-native';
+import {
+  CalendarDays,
+  CalendarRange,
+  ChevronRight,
+  Compass,
+  Flame,
+  LucideIcon,
+  MessageCircle,
+  Moon,
+  Sparkles,
+  Trophy,
+  Waves,
+} from 'lucide-react-native';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { Arrive } from '../../components/Arrive';
@@ -9,10 +21,12 @@ import { EmptyState } from '../../components/EmptyState';
 import { NightSky } from '../../components/NightSky';
 import { ProgressRing } from '../../components/ProgressRing';
 import { ScreenContainer } from '../../components/ScreenContainer';
+import { SkeletonLines } from '../../components/SkeletonLines';
 import { StatPill } from '../../components/StatPill';
 import { MIN_DREAMS_FOR_INSIGHT, useDreamInsight } from '../../hooks/useDreamInsight';
 import { useDreams } from '../../hooks/useDreams';
 import { useProfile } from '../../hooks/useProfile';
+import { useProgressNarratives } from '../../hooks/useProgressNarratives';
 import { useTechniqueRecommendation } from '../../hooks/useTechniqueRecommendation';
 import { MainTabParamList } from '../../navigation/types';
 import { colors, spacing, typography } from '../../theme';
@@ -68,12 +82,62 @@ function TechniqueRecommendationCard() {
   );
 }
 
+type NarrativeCardProps = {
+  label: string;
+  icon: LucideIcon;
+  text: string | null;
+  isLoading: boolean;
+  fallback: string;
+};
+
+// Same card chrome as the technique and Insight cards (insightCard/insightHeader/
+// insightLabel/insightBody). No retry affordance on purpose: any failure, or a period the
+// function had nothing for, just shows the plain fallback line.
+function ProgressNarrativeCard({ label, icon: Icon, text, isLoading, fallback }: NarrativeCardProps) {
+  return (
+    <Card style={styles.insightCard} elevated>
+      <View style={styles.insightHeader}>
+        <Icon color={colors.accent.primary} size={16} strokeWidth={1.75} />
+        <Text style={[typography.label, styles.insightLabel]}>{label}</Text>
+      </View>
+      {isLoading ? (
+        <SkeletonLines accessibilityLabel={`Loading ${label.toLowerCase()} summary`} />
+      ) : text ? (
+        <Text style={[typography.body, styles.insightBody]}>{text}</Text>
+      ) : (
+        <Text style={[typography.body, styles.insightPending]}>{fallback}</Text>
+      )}
+    </Card>
+  );
+}
+
+// The weekly and monthly progress narratives, stacked. Renders in both the populated and
+// empty-account branches below: with fewer than two dreams logged the hook makes no API
+// call and both cards show the fallback line.
+function ProgressNarrativeCards({ narratives }: { narratives: ReturnType<typeof useProgressNarratives> }) {
+  const { weekly, monthly, isLoading, fallback } = narratives;
+
+  return (
+    <View style={styles.narrativeStack}>
+      <ProgressNarrativeCard label="This week" icon={CalendarDays} text={weekly} isLoading={isLoading} fallback={fallback} />
+      <ProgressNarrativeCard
+        label="This month"
+        icon={CalendarRange}
+        text={monthly}
+        isLoading={isLoading}
+        fallback={fallback}
+      />
+    </View>
+  );
+}
+
 export function InsightsScreen() {
-  const { dreams } = useDreams();
+  const { dreams, isLoading: dreamsLoading } = useDreams();
   const { profile } = useProfile();
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
 
   const totalDreams = dreams.length;
+  const narratives = useProgressNarratives(totalDreams, dreamsLoading);
   const { insight, isLoading: insightLoading } = useDreamInsight(totalDreams);
   const lucidDreams = dreams.filter((dream) => dream.is_lucid).length;
   const lucidRate = totalDreams > 0 ? Math.round((lucidDreams / totalDreams) * 100) : 0;
@@ -92,7 +156,10 @@ export function InsightsScreen() {
         </Arrive>
 
         {totalDreams === 0 ? (
-          <>
+          // Scrollable, unlike before: the technique recommendation is a full paragraph and
+          // the two narrative cards follow it, so together they no longer fit above the
+          // tab bar on a phone.
+          <ScrollView contentContainerStyle={styles.emptyScroll} showsVerticalScrollIndicator={false}>
             <EmptyState
               icon={Waves}
               title="Nothing to trace yet."
@@ -100,10 +167,13 @@ export function InsightsScreen() {
               tint={colors.text.secondary}
               action={{ label: 'Log a dream', onPress: () => navigation.navigate('Journal') }}
             />
-            <Arrive delay={80} style={styles.emptyTechniqueWrap}>
+            <Arrive delay={80}>
               <TechniqueRecommendationCard />
             </Arrive>
-          </>
+            <Arrive delay={110}>
+              <ProgressNarrativeCards narratives={narratives} />
+            </Arrive>
+          </ScrollView>
         ) : (
           <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
             <Arrive>
@@ -126,6 +196,10 @@ export function InsightsScreen() {
 
             <Arrive delay={90}>
               <TechniqueRecommendationCard />
+            </Arrive>
+
+            <Arrive delay={110}>
+              <ProgressNarrativeCards narratives={narratives} />
             </Arrive>
 
             {totalDreams >= MIN_DREAMS_FOR_INSIGHT ? (
@@ -196,9 +270,13 @@ const styles = StyleSheet.create({
   insightCard: {
     gap: spacing.xs,
   },
-  emptyTechniqueWrap: {
+  emptyScroll: {
     paddingHorizontal: spacing.screenPadding,
-    paddingTop: spacing.md,
+    paddingBottom: spacing.tabBarClearance,
+    gap: spacing.md,
+  },
+  narrativeStack: {
+    gap: spacing.md,
   },
   insightHeader: {
     flexDirection: 'row',
