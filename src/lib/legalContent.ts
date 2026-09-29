@@ -31,6 +31,17 @@ export const PRIVACY_POLICY: LegalDoc = {
         'Dream journal entries and related content you write',
         'App usage data (streaks, techniques used, session activity)',
         'Device information (operating system, app version)',
+        'Sleep insights generated from your Apple Health or Health Connect sleep data, if you choose to connect it (see Health and sleep data below)',
+      ],
+    },
+    {
+      heading: 'Health and sleep data',
+      paragraphs: [
+        'If you choose to connect Apple Health (iPhone) or Health Connect (Android), Nocturnal reads your sleep records for the last 30 days: when you fell asleep, when you woke up, and how long you slept. Nocturnal asks for read-only permission and never writes to Apple Health or Health Connect. You can say no, and the rest of the app works the same.',
+        'Your sleep records stay on your device. Nocturnal compares them with your dream journal on your phone and works out summary numbers, such as your average sleep before lucid dreams and the hour you most often wake on those nights. Only those summary numbers, never your sleep records, are sent to our servers and to Anthropic (the Claude API) to write your Sleep and dreams insight. We store the written insight so it does not need to be regenerated, and it is deleted when you delete your account.',
+        'We do not sell your health data, and we do not use it for advertising, marketing or profiling. It is used only to show you your own sleep insight.',
+        "You can stop at any time. On iPhone, turn off Sleep for Nocturnal in the Health app under Sharing, then Apps. On Android, remove Nocturnal's sleep permission in Health Connect. Nocturnal will then stop reading your sleep.",
+        'Sleep insights are for information and interest only. They are not medical advice.',
       ],
     },
     {
@@ -38,6 +49,7 @@ export const PRIVACY_POLICY: LegalDoc = {
       bullets: [
         'To provide and personalise the app experience',
         'To power AI features (dream sign detection, insights, coach chat) using your journal data',
+        'To show how your sleep relates to your lucid dreams, if you connect Apple Health or Health Connect',
         'To process your subscription via RevenueCat',
       ],
     },
@@ -45,7 +57,7 @@ export const PRIVACY_POLICY: LegalDoc = {
       heading: 'Who we share it with',
       bullets: [
         'Supabase (database and file storage)',
-        'Anthropic (AI features — your journal data is sent to the Claude API to generate insights and coach responses)',
+        'Anthropic (AI features — your journal data is sent to the Claude API to generate insights and coach responses. If you use sleep insights, summary numbers about your sleep are sent too, never your sleep records)',
         'RevenueCat (subscription management)',
         'PostHog (anonymous usage analytics)',
       ],
@@ -54,7 +66,7 @@ export const PRIVACY_POLICY: LegalDoc = {
     {
       heading: 'How long we keep it',
       paragraphs: [
-        'We keep your data for as long as your account is active. You can delete your account at any time from the Profile screen, which permanently deletes all your data.',
+        'We keep your data for as long as your account is active. You can delete your account at any time from the Profile screen, which permanently deletes all your data. We do not store your sleep records, only the written sleep insight, which is deleted with your account.',
       ],
     },
     {
