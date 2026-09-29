@@ -4,6 +4,7 @@ import { Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 import { Arrive } from '../../components/Arrive';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
+import { DreamCategoryPill } from '../../components/DreamCategoryPill';
 import { DreamSignRevealOverlay } from '../../components/DreamSignRevealOverlay';
 import { MilestoneOverlay } from '../../components/MilestoneOverlay';
 import { NewDreamSheet } from '../../components/NewDreamSheet';
@@ -14,6 +15,7 @@ import { Dream, useDreams } from '../../hooks/useDreams';
 import { useDreamSignReveal } from '../../hooks/useDreamSignReveal';
 import { useMilestoneCheck } from '../../hooks/useMilestoneCheck';
 import { useReviewPrompt } from '../../hooks/useReviewPrompt';
+import { parseDreamCategory } from '../../lib/dreamCategories';
 import { colors, radius, spacing, typography } from '../../theme';
 
 // dreamed_at is stored as a local "YYYY-MM-DD" day (see lib/streaks.ts), so it's parsed
@@ -131,6 +133,7 @@ function JournalEmptyState({ onRecord }: { onRecord: () => void }) {
 }
 
 function DreamRow({ dream }: { dream: Dream }) {
+  const category = parseDreamCategory(dream.category);
   const tint = dream.is_lucid ? colors.status.lucid : colors.accent.primary;
   return (
     <Card style={styles.dreamCard}>
@@ -146,12 +149,15 @@ function DreamRow({ dream }: { dream: Dream }) {
           <Text style={[typography.bodyMedium, styles.dreamTitle]} numberOfLines={1}>
             {dream.title}
           </Text>
-          {dream.is_lucid ? (
+          {/* The category pill below already says Lucid for a categorised lucid dream, so the
+              header badge only stands in for older lucid entries that have no category. */}
+          {dream.is_lucid && category !== 'lucid' ? (
             <View style={styles.lucidBadge}>
               <Text style={[typography.caption, styles.lucidBadgeText]}>Lucid</Text>
             </View>
           ) : null}
         </View>
+        {category ? <DreamCategoryPill category={category} /> : null}
         {dream.content ? (
           <Text style={[typography.body, styles.dreamContent]} numberOfLines={2}>
             {dream.content}

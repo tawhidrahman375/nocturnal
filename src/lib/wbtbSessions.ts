@@ -1,4 +1,5 @@
 import { TablesUpdate } from '../types/database';
+import { categoriseDream } from './dreamCategories';
 import { cancelAlarm, cancelWindowEnd, scheduleAlarm } from './notifications';
 import { supabase } from './supabase';
 import { MINUTE_MS, WbtbSession, WbtbStatus, WbtbTechnique } from './wbtb';
@@ -89,5 +90,8 @@ export async function saveRecallToJournal(userId: string, recall: string) {
     .select('id')
     .single();
   if (error) throw new Error(error.message);
+  // A recalled dream lands in the journal like any other, so it gets a category too.
+  // Fire and forget; a failure just leaves it uncategorised.
+  categoriseDream({ dreamId: data.id, content: recall, isLucid: false }).catch(() => {});
   return data.id;
 }

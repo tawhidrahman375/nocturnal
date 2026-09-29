@@ -26,6 +26,23 @@ export const colors = {
     mid: '#1A1550',
     glow: 'rgba(108, 142, 255, 0.25)',
   },
+  // Fill and text for the dream-category pill on Journal cards (src/components/
+  // DreamCategoryPill.tsx). Translucent tints so they sit on the card the way the Lucid
+  // badge always has, except sleep paralysis, which is deliberately a solid warning tag.
+  dreamCategory: {
+    lucid: { fill: 'rgba(52, 211, 153, 0.12)', text: '#34D399' },
+    nightmare: { fill: 'rgba(127, 29, 29, 0.42)', text: '#E8A0A0' },
+    adventure: { fill: 'rgba(15, 118, 110, 0.4)', text: '#7DE3D6' },
+    emotional: { fill: 'rgba(190, 120, 140, 0.2)', text: '#E8A7B8' },
+    surreal: { fill: 'rgba(108, 142, 255, 0.14)', text: '#6C8EFF' },
+    mundane: { fill: 'rgba(139, 156, 199, 0.1)', text: '#8B9CC7' },
+    recurring: { fill: 'rgba(251, 146, 60, 0.14)', text: '#FDBA74' },
+    'sleep paralysis': { fill: '#B91C1C', text: '#FFFFFF' },
+    'astral projection': { fill: 'rgba(109, 40, 217, 0.4)', text: '#C4B5FD' },
+    unknown: { fill: 'rgba(139, 156, 199, 0.06)', text: '#6B7A9C' },
+    // Soft violet halo for astral projection only. Static, so it costs nothing per frame.
+    astralGlow: 'rgba(167, 139, 250, 0.55)',
+  },
   status: {
     lucid: '#34D399',
     lucidMuted: 'rgba(52, 211, 153, 0.12)',

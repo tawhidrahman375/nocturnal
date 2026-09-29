@@ -1,5 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
+import { categoriseDream } from '../lib/dreamCategories';
 import { refreshRealityCheckSchedule } from '../lib/realityChecks';
 import { localDateString, refreshStreakForUser } from '../lib/streaks';
 import { supabase } from '../lib/supabase';
@@ -52,11 +53,21 @@ export function useDreams() {
 
   const addDream = async (dream: NewDream) => {
     if (!user) return { error: 'Not signed in' };
-    const { error: insertError } = await supabase
+    const { data: inserted, error: insertError } = await supabase
       .from('dreams')
-      .insert({ ...dream, user_id: user.id, dreamed_at: localDateString(new Date()) });
+      .insert({ ...dream, user_id: user.id, dreamed_at: localDateString(new Date()) })
+      .select('id')
+      .single();
     if (insertError) return { error: insertError.message };
     await refresh();
+    // Fire and forget: the badge fills in when the category arrives, and a failure just
+    // leaves it null. Started after the refresh so that fetch can't overwrite the patch.
+    categoriseDream({ dreamId: inserted.id, content: dream.content ?? '', isLucid: dream.is_lucid ?? false })
+      .then((category) => {
+        if (!category) return;
+        setDreams((current) => current.map((d) => (d.id === inserted.id ? { ...d, category } : d)));
+      })
+      .catch(() => {});
     // New tags may have introduced fresh dream signs; keep reminder copy up to date.
     refreshRealityCheckSchedule(user.id).catch(() => {});
     // Today's entry may extend (or start) the journalling streak.
