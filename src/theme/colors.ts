@@ -49,6 +49,19 @@ export const colors = {
     // The same idea in red, so the sleep paralysis warning tag reads as a warning at a glance.
     sleepParalysisGlow: 'rgba(239, 68, 68, 0.7)',
   },
+  // The Welcome screen's one-off moonlit scene (src/screens/auth/WelcomeScreen.tsx), not a
+  // general-purpose palette — the sky gradient, the moon and its halo, the stars, and the
+  // silhouetted hills at the bottom.
+  moonlit: {
+    skyTop: '#2B3178',
+    skyBottom: '#12143A',
+    moon: '#F5F3F0',
+    moonCore: '#F0EEE8',
+    moonEdge: '#C8CCE0',
+    moonCrater: 'rgba(180, 185, 210, 0.15)',
+    moonGlow: 'rgba(245, 243, 240, 0.08)',
+    hill: '#1E2456',
+  },
   status: {
     lucid: '#34D399',
     lucidMuted: 'rgba(52, 211, 153, 0.12)',
