@@ -29,7 +29,7 @@ exact hex:
 --panel:            #171A4A  (the full-bleed rounded-top content panel — see section 4)
 --text-primary:     #F5F3F0  (warm off-white, not pure #FFFFFF)
 --text-secondary:   rgba(245,243,240,0.65)  (lavender-tinted gray, subtext)
---accent:           #F2A93B  (warm amber/orange — matches the app icon's crescent moon,
+--accent:           #6C8EFF  (blue — matches the app icon's crescent moon,
                      used ONLY for the active tab / primary highlight)
 --glass-fill:       rgba(255,255,255,0.10)  (inactive pills, floating buttons)
 --star:             #FFFFFF at 40–90% opacity, varied per star/sparkle
@@ -37,7 +37,7 @@ exact hex:
 
 Rules:
 - One dominant background family (indigo → navy vertical gradient), one accent color
-  (warm amber, not purple/indigo — Moonly deliberately avoids the "AI purple" default).
+  (blue accent, not a purple gradient — Moonly deliberately avoids the "AI purple" default).
   No purple-to-blue CTA gradients.
 - Never pure black (#000000) or pure white (#FFFFFF) backgrounds/text.
 - Accent color used sparingly — the active tab/pill and key CTAs only, not on every icon.
