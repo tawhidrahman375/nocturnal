@@ -3,9 +3,8 @@
 Drop this file in your project root (or `.claude/`) and reference it at the start of any
 Claude Code UI session: "Follow DESIGN.md for all UI work on this screen."
 
-Fill in the `[[ ]]` placeholders once you've measured your actual Moonly screenshot with a
-color picker / font identifier (see the tools list in chat). Values below are a reasonable
-starting point for a premium dark atmospheric mobile app, not a pixel-measured copy.
+Values below are a reasonable starting point for a premium dark atmospheric mobile app,
+not a pixel-measured copy.
 
 ## 1. Visual Theme & Atmosphere
 
@@ -27,7 +26,7 @@ exact hex:
 --bg-top:          #2B3178   (lighter indigo-purple, behind the cloud silhouettes)
 --bg-bottom:        #12143A  (deep navy, screen bottom)
 --panel:            #171A4A  (the full-bleed rounded-top content panel — see section 4)
---text-primary:     #F5F3F0  (warm off-white, not pure #FFFFFF)
+--text-primary:     #F5F3F0  (soft off-white, not pure #FFFFFF)
 --text-secondary:   rgba(245,243,240,0.65)  (lavender-tinted gray, subtext)
 --accent:           #6C8EFF  (blue — matches the app icon's crescent moon,
                      used ONLY for the active tab / primary highlight)
@@ -44,21 +43,105 @@ Rules:
 
 ## 3. Typography Rules
 
-- Display/heading font: serif, see FONTS section (delivered in chat) — pick ONE, use it
-  decisively for all headings. Moonly's own in-app headings ("Practice", "Dreams
-  Archive") are a bold serif — this is real in-app type, not just marketing-slide type.
-- Body font: a clean humanist sans (Inter is fine for body text only, never for headings —
-  the serif/sans contrast is the point).
+- Display/heading font: **Fraunces, weight 600 SemiBold** — use it decisively for all
+  headings. Used for `heroTitle`, `displayLg`, `displayMd`, `heading`, `subheading`,
+  `stat`, `clock`. Moonly's own in-app headings ("Practice", "Dreams Archive") are a bold
+  serif — this is real in-app type, not just marketing-slide type.
+- Body font: **Figtree, weights 400 Regular and 500 Medium**, a clean humanist sans. Used
+  for `body`, `bodyMedium`, `label`, `caption`, `overline`. The serif/sans contrast is
+  the point.
+- Inter is installed but unused. Never use it, for headings or body text.
+- No bold weights (700/800) are loaded for Figtree. Do not use `fontWeight: '700'` or
+  `'800'` on Figtree anywhere.
+- No italic is loaded for Figtree. Do not use `fontStyle: 'italic'` on Figtree.
 - Screen-title headings (top-left, e.g. "Practice") sit large and left-aligned, ~34px.
   Section headings within a panel (e.g. "Dreams Archive") are centered, ~28px, slightly
   smaller than the screen title — don't make every heading the same size.
 - No more than 2 font families total in the app.
 
+### Type scale
+
+Values from `src/theme/typography.ts`.
+
+| Token        | Font     | Weight | Size        | Notes                      |
+|--------------|----------|--------|-------------|----------------------------|
+| `heroTitle`  | Fraunces | 600    | 38px        |                            |
+| `displayLg`  | Fraunces | 600    | 32px        |                            |
+| `displayMd`  | Fraunces | 600    | 26px        |                            |
+| `heading`    | Fraunces | 600    | 20px        |                            |
+| `subheading` | Fraunces | 600    | 17px        |                            |
+| `stat`       | Fraunces | 600    | 44px        | large numbers              |
+| `clock`      | Fraunces | 600    | 64px        | large numbers              |
+| `body`       | Figtree  | 400    | 16px        |                            |
+| `bodyMedium` | Figtree  | 500    | 16px        |                            |
+| `label`      | Figtree  | 500    | 13px        |                            |
+| `caption`    | Figtree  | 500    | 12px        |                            |
+| `overline`   | Figtree  | 500    | 12px        | tracked (letterSpacing 1)  |
+
+## 3a. Spacing Scale
+
+- Base unit: 4px. All spacing is a multiple of it.
+- Screen padding: 24px on the sides, safe-area aware top and bottom.
+- Section gap: 24px.
+- Item gap: 8px inside a group.
+- Key action margin: 48px around primary CTAs.
+
+## 3b. Radius Scale
+
+- Panel: full-bleed, rounded top only, large radius (~24px).
+- Cards / glass pills: 16px.
+- Buttons (pill): 999px.
+- Inputs: 12px.
+- Category pills: 999px.
+
+## 3c. Icon Set
+
+- Icon library: Lucide via `lucide-react-native`.
+- Stroke width: 1.5 to 1.75 only.
+- Never emoji as icons.
+- Never a second icon library.
+
+## 3d. Touch Targets
+
+- Minimum 44pt touch target on all interactive elements.
+- Minimum 8px gap between adjacent targets.
+- Destructive actions must not sit in the resting thumb zone (bottom centre).
+
+## 3e. Component States
+
+- Every interactive component must have these states designed: default, pressed,
+  disabled, loading, empty, error.
+- Skeleton screens instead of spinners for data loading.
+- No state may show a blank screen.
+
+## 3f. Contrast
+
+- Body text: minimum 4.5:1 contrast ratio against its background.
+- UI component borders/outlines: minimum 3:1.
+- White text on `#6C8EFF` accent fails 4.5:1. Use dark navy `#12143A` as the label on
+  accent fills instead.
+- Verify all states with a contrast checker before ship.
+
+## 3g. Auth Screens
+
+Applies to Welcome, ProductPreview, SignIn, SignUp.
+
+- No panel. Content floats directly on the NightSky background.
+- 24px side margins, safe-area aware. Close/back controls are a glass pill, not a bare
+  icon.
+- **Welcome:** a single large Fraunces `heroTitle`, left-aligned. One primary pill button
+  (solid `#6C8EFF` fill, dark navy label). One secondary pill button (glass fill
+  `rgba(255,255,255,0.10)` with `BlurView`, no border). No cards.
+- **ProductPreview:** no per-item cards. Dream examples float as glass pills, not `Card`
+  components. The "Lucid" badge uses the `#6C8EFF` accent, no second colour.
+- **SignIn / SignUp:** inputs are borderless. The form floats on the background with no
+  card wrapping it. Footer links use `--text-secondary`, not the accent colour.
+
 ## 4. Component Styling
 
 Correction from the general pattern below: Moonly does NOT float every element directly
 on the raw background. Each screen has exactly ONE full-bleed content panel — a
-rounded-top-corner rectangle (radius ~28–32px, corners top only) in a slightly different
+rounded-top-corner rectangle (radius ~24px, corners top only) in a slightly different
 navy shade (`--panel`) than the background gradient — that holds everything below the
 screen title. Small controls (the +/clock buttons, the bottom nav) float as glass pills
 directly on the background, outside that panel.
@@ -89,8 +172,7 @@ directly on the background, outside that panel.
 - Depth comes from three things only: the background gradient, the single panel's flat
   color shift, and glass-blur floating controls. No box-shadow, no `elevation` prop.
 - Small sparkle/star accents (4-pointed sparkle glyphs, not just round dots) scattered at
-  low density near headings add atmosphere cheaply — see the star section in chat for
-  how to generate these.
+  low density near headings add atmosphere cheaply (see `NightSky` in section 10).
 
 ## 7. Do's and Don'ts
 
@@ -102,7 +184,7 @@ Do:
 
 Don't:
 - Add card borders "for clarity" — fix hierarchy with spacing/type instead.
-- Use Inter/Roboto/system-font for headings.
+- Use Inter/Roboto/system-font anywhere. Headings are Fraunces, body is Figtree.
 - Use indigo-500/violet-500/purple gradient CTAs (the generic AI-slop default).
 - Add box-shadow, drop-shadow, or `elevation` props by default.
 - Add emoji as icons.
@@ -188,3 +270,13 @@ feedback, drop-in for `Pressable`), `src/components/Breathing.tsx` (opacity-loop
 primitive backing Ambient, also used for pre-Ambient atmospheric touches like the
 AlarmStage clock halo), `src/components/PopIn.tsx` (Pop wrapper), `src/components/
 NightSky.tsx` (the star-drift/twinkle/breathing background above).
+
+## 11. Enforcement
+
+- All colour values come from the theme token file, never raw hex in component files.
+- `borderWidth`, `elevation`, `shadowColor`, `shadowOffset`, `shadowOpacity` and
+  `shadowRadius` are banned except where explicitly noted as exceptions in this file.
+- The two noted exceptions are the sleep paralysis pill glow and the astral projection
+  pill glow.
+- `fontFamily` must always reference a typography token, never a raw string.
+- Violations are caught in PR review, not by eye.
