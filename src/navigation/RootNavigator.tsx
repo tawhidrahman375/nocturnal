@@ -5,6 +5,7 @@ import { AuthNavigator } from './AuthNavigator';
 import { navigationRef } from './navigationRef';
 import { PendingRecordingSheet } from '../components/PendingRecordingSheet';
 import { QuickRecordSetup } from '../components/QuickRecordSetup';
+import { trackScreen } from '../lib/analytics';
 import { useAuth } from '../hooks/useAuth';
 import { useMildPromptNotificationRouting } from '../hooks/useMildPromptNotificationRouting';
 import { useMildPromptScheduling } from '../hooks/useMildPromptScheduling';
@@ -27,6 +28,17 @@ const navigationTheme: Theme = {
     text: colors.text.primary,
   },
 };
+
+// Sends a screen event when the focused route changes. getCurrentRoute() resolves through
+// the nested tab and stack navigators to the leaf screen; only its name is sent, never the
+// params. Skips a repeat of the same screen (a param-only change or a re-render).
+let lastTrackedScreen: string | undefined;
+function trackCurrentScreen() {
+  const name = navigationRef.getCurrentRoute()?.name;
+  if (!name || name === lastTrackedScreen) return;
+  lastTrackedScreen = name;
+  trackScreen(name);
+}
 
 export function RootNavigator() {
   const { session } = useAuth();
@@ -55,7 +67,15 @@ export function RootNavigator() {
   );
 
   return (
-    <NavigationContainer ref={navigationRef} theme={navigationTheme} onReady={() => setIsNavReady(true)}>
+    <NavigationContainer
+      ref={navigationRef}
+      theme={navigationTheme}
+      onReady={() => {
+        setIsNavReady(true);
+        trackCurrentScreen();
+      }}
+      onStateChange={trackCurrentScreen}
+    >
       {content}
     </NavigationContainer>
   );

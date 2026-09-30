@@ -8,6 +8,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { LoadingView } from '../../components/LoadingView';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { useAuth } from '../../hooks/useAuth';
+import { track } from '../../lib/analytics';
 import { STAGE_SLIDE_PX } from '../../lib/motion';
 import { cancelAlarm, cancelWindowEnd, scheduleWindowEnd } from '../../lib/notifications';
 import { markMildIntentionSet } from '../../lib/tonightRoutine';
@@ -110,6 +111,7 @@ export function WbtbSessionScreen({ route, navigation }: Props) {
   const handleBegin = () => {
     const wokeAt = new Date();
     persist({ status: 'active', woke_at: wokeAt.toISOString() });
+    track('wbtb_session_started', { technique: session.technique });
     cancelAlarm(session.id);
     scheduleWindowEnd(session.id, addMinutes(wokeAt, session.wake_window_minutes));
     setStage('recall');
@@ -141,6 +143,7 @@ export function WbtbSessionScreen({ route, navigation }: Props) {
 
   const handleComplete = () => {
     persist({ status: 'completed', completed_at: new Date().toISOString() });
+    track('wbtb_session_completed', { technique: session.technique });
     // Tonight's routine card tracks this as the "pre-bed intention" step.
     if (session.technique === 'mild' && user) markMildIntentionSet(user.id).catch(() => {});
     setStage('closed');

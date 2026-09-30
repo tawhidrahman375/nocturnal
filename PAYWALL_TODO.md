@@ -71,6 +71,9 @@ Not started. Zero infrastructure exists. Build this entire layer after core feat
 ## Notes
 
 - RevenueCat handles entitlements, not custom logic
-- PostHog already in stack — use for paywall event tracking
+- PostHog (EU host, `posthog-react-native`) is set up. The client lives in `src/lib/analytics.ts`, with the typed `track()` helper. Users are identified by Supabase user id only, no PII. Autocapture is off, so only explicit events are sent.
+- Paywall events already wired in `useSubscription.openPaywall`: `paywall_shown` (before the RevenueCat paywall opens) and `paywall_converted` (a purchase; a restore does not count). No properties on either yet, so there is no per-variant or per-plan breakdown. When building the paywall variants, add the variant and plan as properties in `AnalyticsEvents` first, and keep to fixed-list values.
+- Not tracked yet: paywall dismissed, plan selected, purchase failed, restore. Add them to `AnalyticsEvents` when the paywall experiments need them.
+- Never put dream text, transcripts, coach messages, or sleep or health data into any event property.
 - natural_wake_time already saved from onboarding quiz — wire into WBTB default when building paywall flow
 - Social proof (ratings, testimonials, user count) to be added post-launch when real data exists

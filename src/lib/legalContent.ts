@@ -15,7 +15,7 @@ const CONTACT_EMAIL = 'nocturnalappsupport@gmail.com';
 
 export const PRIVACY_POLICY: LegalDoc = {
   title: 'Privacy Policy',
-  lastUpdated: '29 September 2026',
+  lastUpdated: '30 September 2026',
   contactEmail: CONTACT_EMAIL,
   sections: [
     {
@@ -30,6 +30,7 @@ export const PRIVACY_POLICY: LegalDoc = {
         'Email address and password (for your account)',
         'Dream journal entries and related content you write',
         'App usage data (streaks, techniques used, session activity)',
+        'Usage analytics: which screens you open and which actions you take, linked to a random account ID (see Usage analytics below)',
         'Device information (operating system, app version)',
         'Sleep insights generated from your Apple Health or Health Connect sleep data, if you choose to connect it (see Health and sleep data below)',
         'Voice recordings of your dreams, only if you choose to record one (see Voice recordings below)',
@@ -54,6 +55,15 @@ export const PRIVACY_POLICY: LegalDoc = {
       ],
     },
     {
+      heading: 'Usage analytics',
+      paragraphs: [
+        'Nocturnal uses PostHog, hosted in the EU, to understand how the app is used so we can improve it. Analytics events are linked to a random account ID, never to your name or email address. PostHog also receives your IP address with each request, and basic device details such as your operating system, app version and language.',
+        'The events we record are: which screens you open, and that you took an action, such as logging a dream, saving a voice recording, starting or finishing a wake-back-to-bed session, completing a reality check, opening the coach, viewing your dream profile, finishing setup, or seeing or completing a subscription offer. For a logged dream we also record whether it was lucid and its category, such as nightmare or adventure. For a voice recording we record how long it was, and for a wake-back-to-bed session we record which technique you used.',
+        'We never send what you write or say to PostHog. That means no dream text, voice recordings or transcripts, no coach messages, and no sleep or health data.',
+        `There is not yet an in-app switch to turn analytics off. To stop it or to have your analytics data deleted, email us at ${CONTACT_EMAIL}.`,
+      ],
+    },
+    {
       heading: 'Why we collect it',
       bullets: [
         'To provide and personalise the app experience',
@@ -61,6 +71,7 @@ export const PRIVACY_POLICY: LegalDoc = {
         'To show how your sleep relates to your lucid dreams, if you connect Apple Health or Health Connect',
         'To turn your voice recordings into text, if you record a dream by voice',
         'To process your subscription via RevenueCat',
+        'To understand how the app is used and improve it, through usage analytics',
       ],
     },
     {
@@ -70,14 +81,14 @@ export const PRIVACY_POLICY: LegalDoc = {
         'Anthropic (AI features — your journal data is sent to the Claude API to generate insights and coach responses. If you use sleep insights, summary numbers about your sleep are sent too, never your sleep records)',
         'OpenAI (speech-to-text: your voice recordings are sent to OpenAI to be transcribed, if you record a dream by voice)',
         'RevenueCat (subscription management)',
-        'PostHog (anonymous usage analytics)',
+        'PostHog (usage analytics, hosted in the EU. Events are linked to a random account ID, never to your name, email or anything you write or say)',
       ],
       paragraphs: ['We do not sell your data. Ever.'],
     },
     {
       heading: 'How long we keep it',
       paragraphs: [
-        'We keep your data for as long as your account is active. You can delete your account at any time from the Profile screen, which permanently deletes all your data. We do not store your sleep records, only the written sleep insight, which is deleted with your account. Voice recordings are deleted from our servers within 24 hours of upload, and from your device once you save or discard them.',
+        'We keep your data for as long as your account is active. You can delete your account at any time from the Profile screen, which permanently deletes all your data. We do not store your sleep records, only the written sleep insight, which is deleted with your account. Voice recordings are deleted from our servers within 24 hours of upload, and from your device once you save or discard them. Usage analytics are held by PostHog separately from your account, so deleting your account does not remove them automatically. Email us and we will delete the analytics data linked to your account ID.',
       ],
     },
     {

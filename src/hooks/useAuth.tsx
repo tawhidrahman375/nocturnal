@@ -6,6 +6,7 @@ import {
   useEffect,
   useState,
 } from 'react';
+import { identifyAnalyticsUser, resetAnalyticsUser } from '../lib/analytics';
 import { supabase } from '../lib/supabase';
 
 type AuthContextValue = {
@@ -27,11 +28,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
+      if (data.session) identifyAnalyticsUser(data.session.user.id);
       setIsLoading(false);
     });
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, nextSession) => {
       setSession(nextSession);
+      // Analytics follows the account, id only. reset() runs on an explicit sign-out (and
+      // account deletion, which signs out) so the next person on this device starts clean.
+      if (nextSession) identifyAnalyticsUser(nextSession.user.id);
+      else if (event === 'SIGNED_OUT') resetAnalyticsUser();
     });
 
     return () => subscription.subscription.unsubscribe();

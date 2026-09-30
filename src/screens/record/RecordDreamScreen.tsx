@@ -15,6 +15,7 @@ import { Button } from '../../components/Button';
 import { NightSky } from '../../components/NightSky';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { track } from '../../lib/analytics';
 import { MAX_RECORDING_SECONDS, notifyRecordingsChanged, savePendingRecording } from '../../lib/dreamRecordings';
 import { EASE_AMBIENT } from '../../lib/motion';
 import { AppStackParamList } from '../../navigation/types';
@@ -75,6 +76,9 @@ export function RecordDreamScreen({ navigation }: Props) {
       const uri = recorder.uri;
       if (!uri) throw new Error('The recorder produced no file');
       savePendingRecording(uri, startedAtRef.current);
+      track('voice_recording_saved', {
+        duration_seconds: Math.round((Date.now() - startedAtRef.current.getTime()) / 1000),
+      });
       await setAudioModeAsync({ allowsRecording: false }).catch(() => {});
       notifyRecordingsChanged();
       await new Promise((resolve) => setTimeout(resolve, SAVING_MIN_MS));

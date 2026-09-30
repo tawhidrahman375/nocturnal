@@ -17,6 +17,7 @@ import { LoadingView } from '../../components/LoadingView';
 import { NightSky } from '../../components/NightSky';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { useCoachChat } from '../../hooks/useCoachChat';
+import { track } from '../../lib/analytics';
 import { CoachMessage } from '../../lib/coachChat';
 import { AppStackParamList } from '../../navigation/types';
 import { colors, radius, spacing, typography } from '../../theme';
@@ -101,6 +102,10 @@ export function CoachChatScreen({ navigation }: Props) {
   } = useCoachChat();
   const [input, setInput] = useState('');
   const listRef = useRef<FlatList<CoachMessage>>(null);
+
+  useEffect(() => {
+    track('coach_chat_opened');
+  }, []);
 
   useEffect(() => {
     requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));

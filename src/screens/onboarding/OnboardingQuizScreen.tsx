@@ -8,6 +8,7 @@ import { OptionCard } from '../../components/OptionCard';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { TimeStepper } from '../../components/TimeStepper';
 import { useAuth } from '../../hooks/useAuth';
+import { track } from '../../lib/analytics';
 import { DURATIONS, STAGE_SLIDE_PX } from '../../lib/motion';
 import {
   DREAMS_PER_WEEK_OPTIONS,
@@ -91,6 +92,8 @@ export function OnboardingQuizScreen({ onComplete }: OnboardingQuizScreenProps) 
       ]);
       setPrediction(predictOutcome(answers));
       setPhase('revealed');
+      // No properties: the quiz answers (including wake time) stay out of analytics.
+      track('onboarding_completed');
     } catch (e) {
       setSaveError((e as Error).message);
       setPhase('quiz');

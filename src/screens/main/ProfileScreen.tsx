@@ -16,7 +16,7 @@ import {
   Shield,
   Trash,
 } from 'lucide-react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { Arrive } from '../../components/Arrive';
@@ -36,6 +36,7 @@ import { useRealityCheckSettings } from '../../hooks/useRealityCheckSettings';
 import { useSubscription } from '../../hooks/useSubscription';
 import { useWbtbDefaults } from '../../hooks/useWbtbDefaults';
 import { pickAvatarImage, uploadAvatar } from '../../lib/avatar';
+import { track } from '../../lib/analytics';
 import { exportAndDeliverData } from '../../lib/dataExport';
 import { purchasesSupported } from '../../lib/purchases';
 import {
@@ -109,6 +110,11 @@ export function ProfileScreen() {
   const { profile, refresh: refreshProfile } = useProfile();
   const { dreams, isLoading: dreamsLoading } = useDreams();
   const dreamProfile = useDreamProfile(dreams.length, dreamsLoading);
+  // Once the card actually has text on screen (not while loading, not when it failed).
+  const dreamProfileShown = !dreamProfile.isLoading && !dreamProfile.error;
+  useEffect(() => {
+    if (dreamProfileShown) track('dream_profile_viewed');
+  }, [dreamProfileShown]);
   const { isPro, isLoading: subscriptionLoading, openPaywall, openCustomerCenter, restore } =
     useSubscription();
 

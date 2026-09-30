@@ -1,12 +1,14 @@
 import { Figtree_400Regular, Figtree_500Medium } from '@expo-google-fonts/figtree';
 import { Fraunces_600SemiBold } from '@expo-google-fonts/fraunces';
 import { useFonts } from 'expo-font';
+import { PostHogProvider } from 'posthog-react-native';
 import { useCallback, useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from './src/hooks/useAuth';
+import { posthog } from './src/lib/analytics';
 import { configureNotifications } from './src/lib/notifications';
 import { configurePurchases } from './src/lib/purchases';
 import { RootNavigator } from './src/navigation/RootNavigator';
@@ -48,7 +50,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <AppShell />
+        {/* Autocapture is off: touch capture records the text of what was tapped, which
+            can be a user's own dream. Only the explicit events in lib/analytics.ts are sent. */}
+        <PostHogProvider client={posthog} autocapture={false}>
+          <AppShell />
+        </PostHogProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

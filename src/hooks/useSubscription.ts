@@ -2,6 +2,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useEffect, useState } from 'react';
 import { CustomerInfo } from 'react-native-purchases';
 import { PAYWALL_RESULT } from 'react-native-purchases-ui';
+import { track } from '../lib/analytics';
 import {
   addCustomerInfoListener,
   getCustomerInfo,
@@ -47,7 +48,10 @@ export function useSubscription() {
 
   const openPaywall = useCallback(async () => {
     if (!purchasesSupported) return PAYWALL_RESULT.NOT_PRESENTED;
+    track('paywall_shown');
     const result = await presentPaywall();
+    // A restore is an existing subscriber getting access back, not a new conversion.
+    if (result === PAYWALL_RESULT.PURCHASED) track('paywall_converted');
     if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) await refresh();
     return result;
   }, [refresh]);

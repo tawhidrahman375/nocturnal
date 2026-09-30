@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { useEffect } from 'react';
+import { track } from '../lib/analytics';
 import { notificationsSupported, parseRealityCheckNotification } from '../lib/notifications';
 import { logRealityCheckReminder } from '../lib/realityChecks';
 import { useAuth } from './useAuth';
@@ -15,6 +16,8 @@ export function useRealityCheckNotificationRouting(enabled: boolean) {
     const log = (notification: Notifications.Notification, status: 'delivered' | 'opened') => {
       const parsed = parseRealityCheckNotification(notification);
       if (!parsed) return;
+      // "Completed" = the user acted on the reminder by opening it; delivery alone is not.
+      if (status === 'opened') track('reality_check_completed');
       logRealityCheckReminder(user.id, { dreamSign: parsed.dreamSign, status }).catch(() => {});
     };
 

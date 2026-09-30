@@ -1,5 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
+import { track } from '../lib/analytics';
 import { categoriseDream } from '../lib/dreamCategories';
 import { refreshRealityCheckSchedule } from '../lib/realityChecks';
 import { localDateString, refreshStreakForUser } from '../lib/streaks';
@@ -62,12 +63,14 @@ export function useDreams() {
     await refresh();
     // Fire and forget: the badge fills in when the category arrives, and a failure just
     // leaves it null. Started after the refresh so that fetch can't overwrite the patch.
-    categoriseDream({ dreamId: inserted.id, content: dream.content ?? '', isLucid: dream.is_lucid ?? false })
+    const isLucid = dream.is_lucid ?? false;
+    categoriseDream({ dreamId: inserted.id, content: dream.content ?? '', isLucid })
       .then((category) => {
+        track('dream_logged', { is_lucid: isLucid, category });
         if (!category) return;
         setDreams((current) => current.map((d) => (d.id === inserted.id ? { ...d, category } : d)));
       })
-      .catch(() => {});
+      .catch(() => track('dream_logged', { is_lucid: isLucid, category: null }));
     // New tags may have introduced fresh dream signs; keep reminder copy up to date.
     refreshRealityCheckSchedule(user.id).catch(() => {});
     // Today's entry may extend (or start) the journalling streak.
