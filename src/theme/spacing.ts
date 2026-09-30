@@ -8,7 +8,7 @@ export const spacing = {
   lg: unit * 3, // 24
   xl: unit * 4, // 32
   xxl: unit * 6, // 48
-  screenPadding: 20,
+  screenPadding: 24,
   cardPadding: 16,
   // Scrollable tab screens pad their bottom by this so content clears the floating tab bar.
   tabBarClearance: 120,

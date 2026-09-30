@@ -46,10 +46,9 @@ const styles = StyleSheet.create({
   labelChip: {
     position: 'relative',
     zIndex: 10,
-    elevation: 10,
   },
   label: {
-    color: '#FFFFFF',
+    color: colors.text.primary,
     fontWeight: '700',
   },
 });

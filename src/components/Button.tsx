@@ -1,3 +1,4 @@
+import { BlurView } from 'expo-blur';
 import { LucideIcon } from 'lucide-react-native';
 import { ActivityIndicator, StyleProp, StyleSheet, Text, ViewStyle } from 'react-native';
 import { AnimatedPressable } from './AnimatedPressable';
@@ -51,6 +52,9 @@ export function Button({
         style,
       ]}
     >
+      {variant === 'secondary' && !disabled ? (
+        <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
+      ) : null}
       {loading ? (
         <ActivityIndicator color={labelColor} />
       ) : (
@@ -77,6 +81,8 @@ const styles = StyleSheet.create({
     // Buttons hug their label by default — a parent opts a row back into equal-width
     // pairing with an explicit `flex: 1` override, but nothing stretches edge-to-edge.
     alignSelf: 'flex-start',
+    // Clips the secondary variant's BlurView to the pill shape.
+    overflow: 'hidden',
   },
   md: {
     height: 52,
@@ -91,20 +97,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent.primary,
   },
   secondary: {
-    backgroundColor: colors.accent.primaryMuted,
-    borderWidth: 1,
-    borderColor: colors.accent.primaryBorder,
+    backgroundColor: colors.surface.glass,
   },
   ghost: {
     backgroundColor: 'transparent',
   },
   primaryDisabled: {
     backgroundColor: colors.surface.card,
-    borderWidth: 1,
-    borderColor: colors.border.default,
   },
   outlineDisabled: {
     backgroundColor: 'transparent',
-    borderColor: colors.border.default,
   },
 });

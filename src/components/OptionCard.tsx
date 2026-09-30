@@ -39,12 +39,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     borderRadius: radius.card,
-    borderWidth: 1,
-    borderColor: colors.border.default,
     backgroundColor: colors.surface.card,
   },
   cardSelected: {
-    borderColor: colors.accent.primary,
     backgroundColor: colors.accent.primaryMuted,
   },
   label: {
@@ -59,13 +56,11 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border.default,
+    backgroundColor: colors.surface.glass,
     alignItems: 'center',
     justifyContent: 'center',
   },
   indicatorSelected: {
     backgroundColor: colors.accent.primary,
-    borderColor: colors.accent.primary,
   },
 });

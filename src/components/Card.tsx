@@ -26,6 +26,6 @@ const styles = StyleSheet.create({
     padding: spacing.cardPadding,
   },
   elevated: {
-    backgroundColor: colors.surface.cardElevated,
+    backgroundColor: colors.surface.glass,
   },
 });

@@ -72,7 +72,7 @@ export function ChipGroup<T extends string | number>({ options, value, onChange,
             onLayout={handleItemLayout(index)}
             accessibilityRole="radio"
             accessibilityState={{ selected }}
-            style={[styles.chip, selected && styles.chipSelectedBorder]}
+            style={[styles.chip, selected && styles.chipSelected]}
           >
             <Text style={[typography.bodyMedium, selected ? styles.labelSelected : styles.label]}>
               {format(option)}
@@ -101,13 +101,13 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 44,
     borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border.default,
+    backgroundColor: colors.surface.glass,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  chipSelectedBorder: {
-    borderColor: colors.accent.primary,
+  // The sliding fill sits behind the selected chip, so the chip itself goes clear to let it show.
+  chipSelected: {
+    backgroundColor: 'transparent',
   },
   label: {
     color: colors.text.secondary,

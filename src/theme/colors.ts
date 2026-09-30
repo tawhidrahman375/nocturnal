@@ -8,6 +8,8 @@ export const colors = {
     card: '#0F1628',
     cardElevated: '#1E2840',
     translucent: 'rgba(26, 32, 53, 0.72)',
+    // Frosted-glass fill for floating controls and secondary surfaces (design.md section 4).
+    glass: 'rgba(255, 255, 255, 0.10)',
   },
   border: {
     default: '#2A3350',
@@ -54,6 +56,7 @@ export const colors = {
     primary: '#F0F4FF',
     secondary: '#8B9CC7',
     tertiary: '#4B5A7A',
-    onAccent: '#FFFFFF',
+    // Dark navy: white on the #6C8EFF accent fails 4.5:1 (design.md section 3f).
+    onAccent: '#12143A',
   },
 } as const;

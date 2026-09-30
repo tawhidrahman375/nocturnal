@@ -7,7 +7,7 @@ type TextFieldProps = TextInputProps & {
   label?: string;
 };
 
-// The Cross token: border color fades between states instead of snapping — always runs,
+// The Cross token: the fill fades between states instead of snapping — always runs,
 // even under reduced motion (DESIGN.md section 10), since it's a plain opacity/color
 // crossfade with no slide or scale.
 export function TextField({ label, style, onFocus, onBlur, ...props }: TextFieldProps) {
@@ -25,15 +25,16 @@ export function TextField({ label, style, onFocus, onBlur, ...props }: TextField
     return () => animation.stop();
   }, [isFocused, focusProgress]);
 
-  const borderColor = focusProgress.interpolate({
+  // Inputs are borderless (design.md section 4): focus brightens the fill to glass instead.
+  const backgroundColor = focusProgress.interpolate({
     inputRange: [0, 1],
-    outputRange: [colors.border.default, colors.accent.primary],
+    outputRange: [colors.surface.card, colors.surface.glass],
   });
 
   return (
     <View style={styles.container}>
       {label ? <Text style={[typography.label, styles.label]}>{label}</Text> : null}
-      <Animated.View style={[styles.inputWrap, { borderColor }]}>
+      <Animated.View style={[styles.inputWrap, { backgroundColor }]}>
         <TextInput
           style={[styles.input, style]}
           placeholderTextColor={colors.text.tertiary}
@@ -62,8 +63,6 @@ const styles = StyleSheet.create({
   },
   inputWrap: {
     borderRadius: radius.button,
-    backgroundColor: colors.surface.card,
-    borderWidth: 1,
     justifyContent: 'center',
   },
   input: {
