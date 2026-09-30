@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Arrive } from '../../components/Arrive';
 import { Button } from '../../components/Button';
+import { GlassBackButton } from '../../components/GlassBackButton';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { TextField } from '../../components/TextField';
 import { useAuth } from '../../hooks/useAuth';
@@ -49,6 +50,12 @@ export function SignUpScreen({ navigation }: Props) {
 
   return (
     <ScreenContainer glow>
+      <View style={styles.backRow}>
+        <GlassBackButton
+          onPress={() => navigation.navigate('Welcome')}
+          accessibilityLabel="Back to welcome"
+        />
+      </View>
       <Arrive style={styles.content}>
         <View style={styles.header}>
           <Text style={[typography.displayMd, styles.title]}>Create account</Text>
@@ -100,6 +107,9 @@ export function SignUpScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
+  backRow: {
+    paddingTop: spacing.md,
+  },
   content: {
     flex: 1,
     justifyContent: 'center',
