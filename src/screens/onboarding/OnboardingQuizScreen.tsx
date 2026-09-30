@@ -1,15 +1,17 @@
-import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { PropsWithChildren, ReactNode, useEffect, useState } from 'react';
+import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Arrive } from '../../components/Arrive';
 import { Breathing } from '../../components/Breathing';
 import { Button } from '../../components/Button';
 import { CrossFade } from '../../components/CrossFade';
+import { NightSky } from '../../components/NightSky';
 import { OptionCard } from '../../components/OptionCard';
-import { ScreenContainer } from '../../components/ScreenContainer';
 import { TimeStepper } from '../../components/TimeStepper';
 import { useAuth } from '../../hooks/useAuth';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 import { track } from '../../lib/analytics';
-import { DURATIONS, STAGE_SLIDE_PX } from '../../lib/motion';
+import { DURATIONS, EASE_IN_OUT, STAGE_SLIDE_PX } from '../../lib/motion';
 import {
   DREAMS_PER_WEEK_OPTIONS,
   DreamsPerWeek,
@@ -25,15 +27,20 @@ import {
   TriedTechnique,
 } from '../../lib/onboarding';
 import { minutesSinceMidnight, timeOfDayFromMinutes } from '../../lib/realityChecks';
-import { colors, radius, spacing, typography } from '../../theme';
+import { colors, spacing, typography } from '../../theme';
 
 const QUESTION_COUNT = 5;
-// A brief pause after a single-select tap, so the choice visibly registers before the
-// screen slides on. Long enough to read as deliberate, short enough to stay brisk.
-const AUTO_ADVANCE_DELAY_MS = 350;
 // Minimum time the "calculating" phase holds, regardless of how fast the save resolves,
 // so the reveal always feels considered rather than tied to network latency.
 const CALCULATING_MIN_MS = 1400;
+
+// What each technique abbreviation stands for, shown under it on the techniques step.
+const TECHNIQUE_NAMES: Record<TriedTechnique, string> = {
+  mild: 'Mnemonic Induction of Lucid Dreams',
+  wild: 'Wake Initiated Lucid Dream',
+  wbtb: 'Wake Back To Bed',
+  ssild: 'Senses Initiated Lucid Dream',
+};
 
 type OnboardingQuizScreenProps = {
   onComplete: () => void;
@@ -55,21 +62,25 @@ export function OnboardingQuizScreen({ onComplete }: OnboardingQuizScreenProps) 
   const [dreamsPerWeek, setDreamsPerWeek] = useState<DreamsPerWeek | null>(null);
   const [wakeTime, setWakeTime] = useState(defaultWakeTime);
   const [triedTechniques, setTriedTechniques] = useState<TriedTechnique[]>([]);
+  // "None" has to be chosen, not just the absence of a choice, or the action button would
+  // show before anything was picked. Saved as an empty techniques list.
+  const [triedNone, setTriedNone] = useState(false);
   const [phase, setPhase] = useState<Phase>('quiz');
   const [saveError, setSaveError] = useState<string | null>(null);
   const [prediction, setPrediction] = useState<OnboardingPrediction | null>(null);
 
   const advance = () => setStep((s) => Math.min(s + 1, QUESTION_COUNT - 1));
 
-  const selectSingle = <T,>(setValue: (value: T) => void, value: T) => {
-    setValue(value);
-    setTimeout(advance, AUTO_ADVANCE_DELAY_MS);
-  };
-
   const toggleTechnique = (value: TriedTechnique) => {
+    setTriedNone(false);
     setTriedTechniques((prev) =>
       prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value]
     );
+  };
+
+  const toggleNone = () => {
+    setTriedNone((prev) => !prev);
+    setTriedTechniques([]);
   };
 
   const finishQuiz = async () => {
@@ -105,16 +116,15 @@ export function OnboardingQuizScreen({ onComplete }: OnboardingQuizScreenProps) 
   }
 
   return (
-    <ScreenContainer glow>
-      <QuizProgress activeSegments={step + 1} />
-
+    <Shell activeSegments={step + 1}>
       <CrossFade contentKey={step} slidePx={STAGE_SLIDE_PX} style={styles.body}>
         {step === 0 ? (
           <QuestionStep
             title="How familiar are you with lucid dreaming?"
             options={EXPERIENCE_OPTIONS}
             value={experienceLevel}
-            onSelect={(value) => selectSingle(setExperienceLevel, value)}
+            onSelect={setExperienceLevel}
+            onContinue={advance}
           />
         ) : null}
 
@@ -123,24 +133,26 @@ export function OnboardingQuizScreen({ onComplete }: OnboardingQuizScreenProps) 
             title="What's your main goal?"
             options={GOAL_OPTIONS}
             value={mainGoal}
-            onSelect={(value) => selectSingle(setMainGoal, value)}
+            onSelect={setMainGoal}
+            onContinue={advance}
           />
         ) : null}
 
         {step === 2 ? (
           <QuestionStep
-            title="How many dreams do you remember per week, on average?"
+            title="How many dreams do you remember per week?"
             options={DREAMS_PER_WEEK_OPTIONS}
             value={dreamsPerWeek}
-            onSelect={(value) => selectSingle(setDreamsPerWeek, value)}
+            onSelect={setDreamsPerWeek}
+            onContinue={advance}
           />
         ) : null}
 
         {step === 3 ? (
-          <View style={styles.stepContent}>
-            <Text style={[typography.displayMd, styles.title]}>
-              What time do you usually wake up naturally?
-            </Text>
+          <StepFrame
+            title="What time do you usually wake up?"
+            footer={<FooterAction label="Continue" visible onPress={advance} />}
+          >
             <View style={styles.timeWrap}>
               <TimeStepper
                 value={wakeTime}
@@ -149,29 +161,36 @@ export function OnboardingQuizScreen({ onComplete }: OnboardingQuizScreenProps) 
                 max={timeOfDayFromMinutes(23 * 60 + 45)}
               />
             </View>
-            <Button label="Continue" onPress={advance} style={styles.continueButton} />
-          </View>
+          </StepFrame>
         ) : null}
 
         {step === 4 ? (
-          <View style={styles.stepContent}>
-            <Text style={[typography.displayMd, styles.title]}>
-              Have you tried any techniques before?
-            </Text>
-            <Text style={[typography.body, styles.subtitle]}>Pick as many as apply.</Text>
+          <StepFrame
+            title="Have you tried any techniques before?"
+            subtitle="Pick as many as apply."
+            footer={
+              <FooterAction
+                label="See my prediction"
+                visible={triedTechniques.length > 0 || triedNone}
+                onPress={finishQuiz}
+              />
+            }
+          >
             <View style={styles.options}>
               {TECHNIQUE_TRIED_OPTIONS.map((option) => (
                 <OptionCard
                   key={option.value}
                   label={option.label}
+                  sublabel={TECHNIQUE_NAMES[option.value]}
                   selected={triedTechniques.includes(option.value)}
                   onPress={() => toggleTechnique(option.value)}
                 />
               ))}
               <OptionCard
                 label="None"
-                selected={triedTechniques.length === 0}
-                onPress={() => setTriedTechniques([])}
+                sublabel="No techniques yet"
+                selected={triedNone}
+                onPress={toggleNone}
               />
             </View>
             {saveError ? (
@@ -179,11 +198,28 @@ export function OnboardingQuizScreen({ onComplete }: OnboardingQuizScreenProps) 
                 <Text style={[typography.label, styles.errorText]}>{saveError}</Text>
               </Arrive>
             ) : null}
-            <Button label="See my prediction" onPress={finishQuiz} style={styles.continueButton} />
-          </View>
+          </StepFrame>
         ) : null}
       </CrossFade>
-    </ScreenContainer>
+    </Shell>
+  );
+}
+
+// The frame every step and the reveal share: NightSky behind everything, the progress bar
+// across the top below the status bar, and the step itself filling the rest. The sky sits
+// outside the step transition, so it never flickers between steps.
+function Shell({ activeSegments, children }: PropsWithChildren<{ activeSegments: number }>) {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View style={styles.root}>
+      <NightSky intensity="full" style={styles.sky}>
+        <View style={[styles.progressWrap, { paddingTop: insets.top + spacing.md }]}>
+          <QuizProgress activeSegments={activeSegments} />
+        </View>
+        {children}
+      </NightSky>
+    </View>
   );
 }
 
@@ -199,20 +235,90 @@ function QuizProgress({ activeSegments }: { activeSegments: number }) {
   );
 }
 
+type StepFrameProps = PropsWithChildren<{
+  eyebrow?: string;
+  title: string;
+  subtitle?: string;
+  footer?: ReactNode;
+}>;
+
+// The layout every step uses: the top 30% left to the sky, then the question, its subtitle
+// 8px under it, a 32px gap, the options, and the action button pinned above the safe area.
+// The empty sky gives way first on a short screen; if it still doesn't fit, the question and
+// options scroll while the button stays put.
+function StepFrame({ eyebrow, title, subtitle, footer, children }: StepFrameProps) {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View style={styles.step}>
+      <View style={styles.skySpace} />
+      <ScrollView
+        style={styles.stepScroll}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {eyebrow ? <Text style={[typography.overline, styles.eyebrow]}>{eyebrow}</Text> : null}
+        <Text style={[typography.displayLg, styles.title]}>{title}</Text>
+        {subtitle ? <Text style={[typography.body, styles.subtitle]}>{subtitle}</Text> : null}
+        <View style={styles.stepBody}>{children}</View>
+      </ScrollView>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.md }]}>
+        {footer}
+      </View>
+    </View>
+  );
+}
+
+// The primary action pinned to the bottom of a step. Its space is always reserved so nothing
+// shifts when it appears; hidden, it is invisible and cannot be tapped. Fades on the Cross token.
+function FooterAction({ label, visible, onPress }: { label: string; visible: boolean; onPress: () => void }) {
+  const reducedMotion = useReducedMotion();
+  const [opacity] = useState(() => new Animated.Value(visible ? 1 : 0));
+
+  useEffect(() => {
+    if (reducedMotion) {
+      opacity.setValue(visible ? 1 : 0);
+      return;
+    }
+    const animation = Animated.timing(opacity, {
+      toValue: visible ? 1 : 0,
+      duration: DURATIONS.cross,
+      easing: EASE_IN_OUT,
+      useNativeDriver: true,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [visible, reducedMotion, opacity]);
+
+  return (
+    <Animated.View
+      style={[{ opacity }, !visible && styles.footerHidden]}
+      accessibilityElementsHidden={!visible}
+      importantForAccessibility={visible ? 'auto' : 'no-hide-descendants'}
+    >
+      <Button label={label} labelColor={colors.text.primary} onPress={onPress} style={styles.actionButton} />
+    </Animated.View>
+  );
+}
+
 function QuestionStep<T extends string>({
   title,
   options,
   value,
   onSelect,
+  onContinue,
 }: {
   title: string;
   options: { value: T; label: string }[];
   value: T | null;
   onSelect: (value: T) => void;
+  onContinue: () => void;
 }) {
   return (
-    <View style={styles.stepContent}>
-      <Text style={[typography.displayMd, styles.title]}>{title}</Text>
+    <StepFrame
+      title={title}
+      footer={<FooterAction label="Continue" visible={value !== null} onPress={onContinue} />}
+    >
       <View style={styles.options}>
         {options.map((option) => (
           <OptionCard
@@ -223,7 +329,7 @@ function QuestionStep<T extends string>({
           />
         ))}
       </View>
-    </View>
+    </StepFrame>
   );
 }
 
@@ -237,10 +343,8 @@ function OutcomeReveal({
   onDone: () => void;
 }) {
   return (
-    <ScreenContainer glow>
-      <QuizProgress activeSegments={QUESTION_COUNT} />
-
-      <CrossFade contentKey={phase} style={styles.outcomeBody}>
+    <Shell activeSegments={QUESTION_COUNT}>
+      <CrossFade contentKey={phase} style={styles.body}>
         {phase === 'calculating' ? (
           <View style={styles.calculating}>
             <View style={styles.calculatingHalo}>
@@ -261,30 +365,38 @@ function OutcomeReveal({
             <Text style={[typography.label, styles.calculatingText]}>Finding your path...</Text>
           </View>
         ) : (
-          <Arrive style={styles.reveal}>
-            <Text style={[typography.label, styles.eyebrow]}>Your path</Text>
-            <Text style={[typography.displayLg, styles.headline]}>{prediction?.headline}</Text>
-            <Text style={[typography.body, styles.detail]}>{prediction?.detail}</Text>
-            <Button label="Let's go" onPress={onDone} style={styles.letsGoButton} />
-          </Arrive>
+          <StepFrame
+            eyebrow="Your path"
+            title={prediction?.headline ?? ''}
+            subtitle={prediction?.detail}
+            footer={<FooterAction label="Let's go" visible onPress={onDone} />}
+          />
         )}
       </CrossFade>
-    </ScreenContainer>
+    </Shell>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+  },
+  sky: {
+    flex: 1,
+  },
+  progressWrap: {
+    paddingHorizontal: spacing.screenPadding,
+  },
   progress: {
     flexDirection: 'row',
-    gap: spacing.xs,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.lg,
+    gap: spacing.sm,
   },
   segment: {
     flex: 1,
-    height: 3,
-    borderRadius: radius.pill,
-    backgroundColor: colors.border.default,
+    height: 6,
+    borderRadius: 8,
+    backgroundColor: colors.surface.track,
   },
   segmentActive: {
     backgroundColor: colors.accent.primary,
@@ -292,32 +404,54 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
   },
-  stepContent: {
+  step: {
     flex: 1,
-    justifyContent: 'center',
-    gap: spacing.lg,
+    paddingHorizontal: spacing.screenPadding,
+  },
+  // The top 30% stays empty sky. It is the first thing to give way when a step is tall.
+  skySpace: {
+    height: '30%',
+    minHeight: spacing.md,
+    flexShrink: 1000,
+  },
+  stepScroll: {
+    flexGrow: 0,
+    flexShrink: 1,
+  },
+  eyebrow: {
+    color: colors.text.secondary,
+    marginBottom: spacing.sm,
   },
   title: {
     color: colors.text.primary,
   },
   subtitle: {
     color: colors.text.secondary,
-    marginTop: -spacing.md,
+    marginTop: spacing.sm,
   },
-  timeWrap: {
-    paddingVertical: spacing.lg,
+  stepBody: {
+    marginTop: spacing.xl,
   },
   options: {
-    gap: spacing.sm,
+    gap: spacing.sm + spacing.xs / 2,
   },
-  continueButton: {
+  timeWrap: {
+    alignItems: 'center',
+  },
+  footer: {
+    flexGrow: 1,
+    justifyContent: 'flex-end',
+    paddingTop: spacing.md,
+  },
+  footerHidden: {
+    pointerEvents: 'none',
+  },
+  actionButton: {
     alignSelf: 'stretch',
   },
   errorText: {
-    color: '#F87171',
-  },
-  outcomeBody: {
-    flex: 1,
+    color: colors.status.danger,
+    marginTop: spacing.md,
   },
   calculating: {
     flex: 1,
@@ -331,11 +465,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // A soft filled ring with no stroke: depth from the fill alone, per design.md.
   haloRing: {
     position: 'absolute',
-    borderWidth: 1,
     backgroundColor: colors.accent.primaryMuted,
-    borderColor: colors.accent.primaryBorder,
   },
   haloOuter: {
     width: 200,
@@ -348,26 +481,6 @@ const styles = StyleSheet.create({
     borderRadius: 60,
   },
   calculatingText: {
-    color: colors.text.tertiary,
-  },
-  reveal: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: spacing.md,
-  },
-  eyebrow: {
-    color: colors.text.tertiary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  headline: {
-    color: colors.text.primary,
-  },
-  detail: {
     color: colors.text.secondary,
-  },
-  letsGoButton: {
-    alignSelf: 'stretch',
-    marginTop: spacing.lg,
   },
 });

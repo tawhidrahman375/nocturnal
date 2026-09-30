@@ -30,7 +30,7 @@ function StepButton({ direction, disabled, onPress, label }: StepButtonProps) {
       style={styles.stepButton}
     >
       <Icon
-        color={disabled ? colors.border.default : colors.text.secondary}
+        color={disabled ? colors.text.tertiary : colors.text.secondary}
         size={24}
         strokeWidth={1.5}
       />
@@ -60,7 +60,7 @@ export function TimeStepper({ value, onChange, min, max }: TimeStepperProps) {
         <Text style={[typography.clock, styles.digits]}>{minute}</Text>
         <StepButton direction="down" label="15 minutes earlier" disabled={!canStep(-15)} onPress={() => step(-15)} />
       </View>
-      <Text style={[typography.heading, styles.period]}>{period}</Text>
+      <Text style={[typography.label, styles.period]}>{period}</Text>
     </View>
   );
 }
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   separator: {
-    color: colors.text.tertiary,
+    color: colors.text.secondary,
     marginHorizontal: spacing.xs,
   },
   period: {

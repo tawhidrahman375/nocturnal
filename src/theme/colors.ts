@@ -12,6 +12,12 @@ export const colors = {
     glass: 'rgba(255, 255, 255, 0.10)',
     // The glass fill one step brighter, for a focused glass input.
     glassFocused: 'rgba(255, 255, 255, 0.16)',
+    // The unselected circle on an option card: a faint white, barely lifted off the card.
+    indicator: 'rgba(255, 255, 255, 0.15)',
+    // The empty track of a progress bar.
+    track: 'rgba(255, 255, 255, 0.15)',
+    // A faint accent wash over a selected glass card.
+    selectedTint: 'rgba(108, 142, 255, 0.15)',
   },
   border: {
     default: '#2A3350',
