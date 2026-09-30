@@ -39,7 +39,7 @@ export function BeginnerTrackCard() {
           <Text style={[typography.heading, styles.title]}>30 days to your first lucid dream</Text>
           <Text style={[typography.body, styles.body]}>One new habit each night.</Text>
         </View>
-        <Button label="Start the track" onPress={open} />
+        <Button label="Start the track" onPress={open} labelColor={colors.text.primary} />
         <View style={styles.bottomBar} />
       </View>
     );

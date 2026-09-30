@@ -2,13 +2,14 @@ import { useNavigation } from '@react-navigation/native';
 import { AlarmClock } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { AnimatedPressable } from './AnimatedPressable';
 import { Button } from './Button';
 import { LoadingView } from './LoadingView';
 import { useNow } from '../hooks/useNow';
 import { useOpenWbtbSession } from '../hooks/useOpenWbtbSession';
 import { formatDuration, formatTime, MINUTE_MS, WbtbTechnique } from '../lib/wbtb';
 import { cancelSession } from '../lib/wbtbSessions';
-import { colors, fontFamily, spacing, typography } from '../theme';
+import { colors, fontFamily, radius, spacing, typography } from '../theme';
 
 function Eyebrow({ label, action }: { label: string; action?: { label: string; onPress: () => void } }) {
   return (
@@ -62,11 +63,13 @@ export function WbtbCard() {
             Wake after 5 to 6 hours. Stay up 20 minutes. Drift back with intention.
           </Text>
         </View>
-        <Button
-          label="Plan tonight"
+        <AnimatedPressable
           onPress={() => navigation.navigate('WbtbSetup')}
+          accessibilityRole="button"
           style={styles.planButton}
-        />
+        >
+          <Text style={[typography.bodyMedium, styles.planButtonLabel]}>Plan tonight</Text>
+        </AnimatedPressable>
       </View>
     );
   }
@@ -206,12 +209,19 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
+  // One-off dark pill — deliberately not the shared Button's glass secondary variant.
   planButton: {
+    alignSelf: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'center',
     height: 44,
-    // Same navy identity as before, just lightened a step and given a lighter edge —
-    // #1E2A4A alone was reading as nearly the same tone as the atmosphere behind it.
-    backgroundColor: '#26365C',
+    paddingHorizontal: 24,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface.cardElevated,
     borderWidth: 1,
-    borderColor: '#4A5C8C',
+    borderColor: colors.border.glass,
+  },
+  planButtonLabel: {
+    color: colors.text.primary,
   },
 });

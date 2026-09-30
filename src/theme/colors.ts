@@ -14,6 +14,8 @@ export const colors = {
   border: {
     default: '#2A3350',
     subtle: 'rgba(42, 51, 80, 0.6)',
+    // Hairline edge for the one dark-pill override on the Home WBTB card.
+    glass: 'rgba(255, 255, 255, 0.15)',
   },
   accent: {
     primary: '#6C8EFF',

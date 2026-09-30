@@ -15,6 +15,8 @@ type ButtonProps = {
   icon?: LucideIcon;
   disabled?: boolean;
   loading?: boolean;
+  // Overrides the variant's label colour for a one-off; ignored while disabled.
+  labelColor?: string;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -32,11 +34,12 @@ export function Button({
   icon: Icon,
   disabled,
   loading,
+  labelColor: labelColorOverride,
   style,
 }: ButtonProps) {
   const isDisabled = disabled || loading;
   // A dimmed accent fill reads as muddy on navy, so disabled buttons drop to a neutral surface.
-  const labelColor = disabled ? colors.text.tertiary : LABEL_COLOR[variant];
+  const labelColor = disabled ? colors.text.tertiary : labelColorOverride ?? LABEL_COLOR[variant];
 
   return (
     <AnimatedPressable
