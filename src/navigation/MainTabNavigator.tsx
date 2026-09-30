@@ -1,10 +1,12 @@
 import { BottomTabBarProps, createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { NavigationHelpers, ParamListBase, TabNavigationState } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import { Compass, House, User, Waves } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
-import { Animated, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { Animated, LayoutChangeEvent, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainTabParamList } from './types';
+import { DURATIONS, EASE_IN_OUT } from '../lib/motion';
 import { HomeScreen } from '../screens/main/HomeScreen';
 import { JournalScreen } from '../screens/main/JournalScreen';
 import { InsightsScreen } from '../screens/main/InsightsScreen';
@@ -262,11 +264,71 @@ function TabBarItem({
   );
 }
 
+// A swipe is a single discrete step, not a finger-tracked drag: past the distance (or a
+// quick flick past the smaller one) it moves one tab over, and the Cross fade below does
+// the transition. Nothing follows the finger, so there is no rubber-band at either end —
+// swiping left on Profile or right on Home simply does nothing.
+const SWIPE_DISTANCE = 60;
+const SWIPE_FLICK_DISTANCE = 24;
+const SWIPE_FLICK_VELOCITY = 0.5;
+// How much more horizontal than vertical a move must be before it's claimed, so a
+// vertical scroll that drifts sideways never turns into a tab change.
+const SWIPE_DIRECTION_RATIO = 2;
+
+type SwipeLayoutProps = {
+  state: TabNavigationState<ParamListBase>;
+  navigation: NavigationHelpers<ParamListBase>;
+  children: ReactNode;
+};
+
+// Built on PanResponder rather than react-native-pager-view / gesture-handler, which are
+// not installed — so this ships over the air with no new native build. The responder
+// bubbles from the deepest view up, so anything inside a screen that claims a horizontal
+// gesture of its own (a horizontal list) wins over it.
+function SwipeLayout({ state, navigation, children }: SwipeLayoutProps) {
+  const { index, routes } = state;
+
+  // Rebuilt when the active tab changes, never mid-gesture, so it always steps from the
+  // tab that is actually showing.
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, g) =>
+          Math.abs(g.dx) > 16 && Math.abs(g.dx) > Math.abs(g.dy) * SWIPE_DIRECTION_RATIO,
+        onPanResponderRelease: (_, g) => {
+          const farEnough = Math.abs(g.dx) > SWIPE_DISTANCE;
+          const flicked = Math.abs(g.dx) > SWIPE_FLICK_DISTANCE && Math.abs(g.vx) > SWIPE_FLICK_VELOCITY;
+          if (!farEnough && !flicked) return;
+          // Swiping left (negative dx) reveals the tab to the right, like a pager.
+          const target = routes[index + (g.dx < 0 ? 1 : -1)];
+          if (target) navigation.navigate(target.name);
+        },
+      }),
+    [index, routes, navigation]
+  );
+
+  return (
+    <View style={styles.swipeLayout} {...panResponder.panHandlers}>
+      {children}
+    </View>
+  );
+}
+
 export function MainTabNavigator() {
   return (
     <Tab.Navigator
       tabBar={(props) => <TabBar {...props} />}
-      screenOptions={{ headerShown: false }}
+      layout={(props) => <SwipeLayout {...props} />}
+      screenOptions={{
+        headerShown: false,
+        // The Cross token (design.md section 10): a 200ms crossfade between tabs, used for
+        // both taps and swipes.
+        animation: 'fade',
+        transitionSpec: {
+          animation: 'timing',
+          config: { duration: DURATIONS.cross, easing: EASE_IN_OUT },
+        },
+      }}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Journal" component={JournalScreen} />
@@ -277,6 +339,9 @@ export function MainTabNavigator() {
 }
 
 const styles = StyleSheet.create({
+  swipeLayout: {
+    flex: 1,
+  },
   wrap: {
     position: 'absolute',
     left: spacing.screenPadding,
