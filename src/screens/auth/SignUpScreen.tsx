@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Arrive } from '../../components/Arrive';
 import { AuthLayout } from '../../components/AuthLayout';
 import { Button } from '../../components/Button';
+import { PasswordField } from '../../components/PasswordField';
 import { TextField } from '../../components/TextField';
 import { useAuth } from '../../hooks/useAuth';
 import { AuthStackParamList } from '../../navigation/types';
@@ -77,12 +78,10 @@ export function SignUpScreen({ navigation }: Props) {
           keyboardType="email-address"
           placeholder="Email"
         />
-        <TextField
-          variant="glass"
+        <PasswordField
           accessibilityLabel="Password"
           value={password}
           onChangeText={setPassword}
-          secureTextEntry
           autoCapitalize="none"
           autoComplete="password-new"
           placeholder="Password (at least 6 characters)"
