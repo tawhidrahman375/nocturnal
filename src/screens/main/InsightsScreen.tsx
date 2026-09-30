@@ -7,7 +7,6 @@ import {
   ChevronRight,
   Compass,
   Flame,
-  LucideIcon,
   MessageCircle,
   Moon,
   Sparkles,
@@ -15,6 +14,7 @@ import {
   Waves,
 } from 'lucide-react-native';
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AccordionItem } from '../../components/AccordionItem';
 import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { Arrive } from '../../components/Arrive';
 import { Button } from '../../components/Button';
@@ -71,75 +71,46 @@ function CoachChatEntry() {
   );
 }
 
-// Reuses the same card chrome as the "Insight" card below (insightCard/insightHeader/
-// insightLabel/insightBody styles) — same card style, same NightSky background behind
-// it, per spec. Renders in both the populated and empty-account branches below so the
-// no-history fallback (lib/techniqueRecommendation.ts) is reachable on a fresh account
-// too, not just once there's enough data for the rest of the screen to unlock.
-function TechniqueRecommendationCard() {
+// The technique recommendation as an accordion row. Renders in both the populated and
+// empty-account branches below so the no-history fallback (lib/techniqueRecommendation.ts)
+// is reachable on a fresh account too, not just once there's enough data for the rest of
+// the screen to unlock.
+function TechniqueAccordion() {
   const { recommendation, isLoading } = useTechniqueRecommendation();
 
   return (
-    <Card style={styles.insightCard} elevated>
-      <View style={styles.insightHeader}>
-        <Compass color={colors.accent.primary} size={16} strokeWidth={1.75} />
-        <Text style={[typography.label, styles.insightLabel]}>Your technique</Text>
-      </View>
-      {isLoading ? (
-        <Text style={[typography.body, styles.insightPending]}>Finding your focus...</Text>
-      ) : (
-        <Text style={[typography.body, styles.insightBody]}>{recommendation}</Text>
-      )}
-    </Card>
+    <AccordionItem
+      icon={Compass}
+      label="YOUR TECHNIQUE"
+      text={isLoading ? 'Finding your focus...' : recommendation}
+      muted={isLoading}
+    />
   );
 }
 
-type NarrativeCardProps = {
-  label: string;
-  icon: LucideIcon;
-  text: string | null;
-  isLoading: boolean;
-  fallback: string;
-};
-
-// Same card chrome as the technique and Insight cards (insightCard/insightHeader/
-// insightLabel/insightBody). No retry affordance on purpose: any failure, or a period the
-// function had nothing for, just shows the plain fallback line.
-function ProgressNarrativeCard({ label, icon: Icon, text, isLoading, fallback }: NarrativeCardProps) {
-  return (
-    <Card style={styles.insightCard} elevated>
-      <View style={styles.insightHeader}>
-        <Icon color={colors.accent.primary} size={16} strokeWidth={1.75} />
-        <Text style={[typography.label, styles.insightLabel]}>{label}</Text>
-      </View>
-      {isLoading ? (
-        <SkeletonLines accessibilityLabel={`Loading ${label.toLowerCase()} summary`} />
-      ) : text ? (
-        <Text style={[typography.body, styles.insightBody]}>{text}</Text>
-      ) : (
-        <Text style={[typography.body, styles.insightPending]}>{fallback}</Text>
-      )}
-    </Card>
-  );
-}
-
-// The weekly and monthly progress narratives, stacked. Renders in both the populated and
-// empty-account branches below: with fewer than two dreams logged the hook makes no API
-// call and both cards show the fallback line.
-function ProgressNarrativeCards({ narratives }: { narratives: ReturnType<typeof useProgressNarratives> }) {
+// The weekly and monthly progress narratives. No retry affordance on purpose: any failure,
+// or a period the function had nothing for, just shows the plain fallback line. With fewer
+// than two dreams logged the hook makes no API call and both rows show the fallback line.
+function ProgressNarrativeAccordions({ narratives }: { narratives: ReturnType<typeof useProgressNarratives> }) {
   const { weekly, monthly, isLoading, fallback } = narratives;
 
   return (
-    <View style={styles.narrativeStack}>
-      <ProgressNarrativeCard label="This week" icon={CalendarDays} text={weekly} isLoading={isLoading} fallback={fallback} />
-      <ProgressNarrativeCard
-        label="This month"
-        icon={CalendarRange}
-        text={monthly}
-        isLoading={isLoading}
-        fallback={fallback}
+    <>
+      <AccordionItem
+        icon={CalendarDays}
+        label="THIS WEEK"
+        text={weekly ?? fallback}
+        muted={!weekly}
+        loading={isLoading}
       />
-    </View>
+      <AccordionItem
+        icon={CalendarRange}
+        label="THIS MONTH"
+        text={monthly ?? fallback}
+        muted={!monthly}
+        loading={isLoading}
+      />
+    </>
   );
 }
 
@@ -249,14 +220,10 @@ export function InsightsScreen() {
               tint={colors.text.secondary}
               action={{ label: 'Log a dream', onPress: () => navigation.navigate('Journal') }}
             />
-            <Arrive delay={80}>
-              <TechniqueRecommendationCard />
-            </Arrive>
-            <Arrive delay={110}>
-              <ProgressNarrativeCards narratives={narratives} />
-            </Arrive>
-            <Arrive delay={130}>
-              <SleepInsightCard state={sleep.state} onConnect={sleep.connect} />
+            <Arrive delay={80} style={styles.accordionStack}>
+              <TechniqueAccordion />
+              <ProgressNarrativeAccordions narratives={narratives} />
+              {Platform.OS !== 'web' ? <SleepInsightCard state={sleep.state} onConnect={sleep.connect} /> : null}
             </Arrive>
           </ScrollView>
         ) : (
@@ -279,37 +246,25 @@ export function InsightsScreen() {
               <StatPill icon={Moon} value={totalDreams} label="Logged" tint={colors.text.secondary} />
             </Arrive>
 
-            <Arrive delay={90}>
-              <TechniqueRecommendationCard />
+            <Arrive delay={90} style={styles.accordionStack}>
+              {totalDreams >= MIN_DREAMS_FOR_INSIGHT ? (
+                <AccordionItem
+                  icon={Sparkles}
+                  label="INSIGHT"
+                  text={
+                    insight
+                      ? insight.content
+                      : insightLoading
+                        ? 'Reading your patterns...'
+                        : "Check back after tonight's entry."
+                  }
+                  muted={!insight}
+                />
+              ) : null}
+              <TechniqueAccordion />
+              <ProgressNarrativeAccordions narratives={narratives} />
+              {Platform.OS !== 'web' ? <SleepInsightCard state={sleep.state} onConnect={sleep.connect} /> : null}
             </Arrive>
-
-            <Arrive delay={110}>
-              <ProgressNarrativeCards narratives={narratives} />
-            </Arrive>
-
-            <Arrive delay={120}>
-              <SleepInsightCard state={sleep.state} onConnect={sleep.connect} />
-            </Arrive>
-
-            {totalDreams >= MIN_DREAMS_FOR_INSIGHT ? (
-              <Arrive delay={140}>
-                <Card style={styles.insightCard} elevated>
-                  <View style={styles.insightHeader}>
-                    <Sparkles color={colors.accent.primary} size={16} strokeWidth={1.75} />
-                    <Text style={[typography.label, styles.insightLabel]}>Insight</Text>
-                  </View>
-                  {insight ? (
-                    <Text style={[typography.body, styles.insightBody]}>{insight.content}</Text>
-                  ) : insightLoading ? (
-                    <Text style={[typography.body, styles.insightPending]}>Reading your patterns...</Text>
-                  ) : (
-                    <Text style={[typography.body, styles.insightPending]}>
-                      Check back after tonight&apos;s entry.
-                    </Text>
-                  )}
-                </Card>
-              </Arrive>
-            ) : null}
           </ScrollView>
         )}
       </NightSky>
@@ -364,8 +319,11 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.tabBarClearance,
     gap: spacing.md,
   },
-  narrativeStack: {
-    gap: spacing.md,
+  // 12px between rows. The scroll container's own 16px gap sits above this, so the extra
+  // top margin brings the stat pills to the first row up to 24px.
+  accordionStack: {
+    gap: spacing.sm + spacing.xs,
+    marginTop: spacing.lg - spacing.md,
   },
   sleepAction: {
     marginTop: spacing.xs,

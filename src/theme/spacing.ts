@@ -17,6 +17,8 @@ export const spacing = {
 export const radius = {
   card: 12,
   button: 12,
+  // Glass pills and accordion rows (design.md section 3b).
+  glass: 16,
   sheet: 24,
   pill: 999,
 } as const;
