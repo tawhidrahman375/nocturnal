@@ -10,6 +10,8 @@ export const colors = {
     translucent: 'rgba(26, 32, 53, 0.72)',
     // Frosted-glass fill for floating controls and secondary surfaces (design.md section 4).
     glass: 'rgba(255, 255, 255, 0.10)',
+    // A quieter glass for example/preview cards that are not interactive.
+    glassSoft: 'rgba(255, 255, 255, 0.08)',
     // The glass fill one step brighter, for a focused glass input.
     glassFocused: 'rgba(255, 255, 255, 0.16)',
     // The unselected circle on an option card: a faint white, barely lifted off the card.

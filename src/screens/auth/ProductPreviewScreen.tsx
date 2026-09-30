@@ -1,10 +1,10 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Moon, Sparkles } from 'lucide-react-native';
+import { Moon } from 'lucide-react-native';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Arrive } from '../../components/Arrive';
 import { Button } from '../../components/Button';
-import { Card } from '../../components/Card';
-import { ScreenContainer } from '../../components/ScreenContainer';
+import { NightSky } from '../../components/NightSky';
 import { AuthStackParamList } from '../../navigation/types';
 import { colors, radius, spacing, typography } from '../../theme';
 
@@ -23,7 +23,7 @@ const EXAMPLE_DREAMS: ExampleDream[] = [
   {
     title: 'Flying over the coastline',
     content:
-      "Realized mid-fall that I was dreaming, so I just... stopped falling and flew instead. The ocean stretched out gold and endless.",
+      'Realized mid-fall that I was dreaming, so I just... stopped falling and flew instead. The ocean stretched out gold and endless.',
     date: 'Thursday',
     lucid: true,
   },
@@ -44,69 +44,60 @@ const EXAMPLE_DREAMS: ExampleDream[] = [
 ];
 
 export function ProductPreviewScreen({ navigation }: Props) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <ScreenContainer glow>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <Arrive style={styles.hero}>
-          <Text style={[typography.displayLg, styles.headline]}>
-            Your dream life, finally organised
-          </Text>
-          <Text style={[typography.body, styles.subheadline]}>
-            Join free to start your own journal
-          </Text>
-        </Arrive>
+    <View style={styles.root}>
+      <NightSky intensity="full" style={styles.sky}>
+        <View style={[styles.content, { paddingTop: insets.top }]}>
+          {/* A little empty sky for atmosphere; it gives way first on a short screen. */}
+          <View style={styles.skySpace} />
 
-        <Arrive delay={80} style={styles.previewSection}>
-          <Text style={[typography.overline, styles.previewLabel]}>Example</Text>
-          <View style={styles.previewList} pointerEvents="none">
-            {EXAMPLE_DREAMS.map((dream) => (
-              <ExampleDreamCard key={dream.title} dream={dream} />
-            ))}
-          </View>
-        </Arrive>
-      </ScrollView>
+          <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+            <Arrive>
+              <Text style={[typography.heroTitle, styles.headline]}>Your dream life, finally organised.</Text>
+              <Text style={[typography.body, styles.subheadline]}>Join free. Cancel any time.</Text>
 
-      <Arrive delay={140} style={styles.actions}>
-        <Button
-          label="Create free account"
-          onPress={() => navigation.navigate('SignUp')}
-          style={styles.cta}
-        />
-        <Pressable onPress={() => navigation.navigate('SignIn')} style={styles.footer}>
-          <Text style={[typography.body, styles.footerText]}>
-            Already have an account? <Text style={styles.footerLink}>Sign in</Text>
-          </Text>
-        </Pressable>
-      </Arrive>
-    </ScreenContainer>
+              <View style={styles.cards}>
+                {EXAMPLE_DREAMS.map((dream) => (
+                  <ExampleDreamCard key={dream.title} dream={dream} />
+                ))}
+              </View>
+            </Arrive>
+          </ScrollView>
+
+          {/* Whatever height is left over sits here, between the cards and the pinned actions. */}
+          <View style={styles.flexSpacer} />
+
+          <Arrive delay={140} style={[styles.actions, { paddingBottom: insets.bottom + spacing.xl }]}>
+            <Button
+              label="Create free account"
+              labelColor={colors.text.primary}
+              onPress={() => navigation.navigate('SignUp')}
+              style={styles.cta}
+            />
+            <Pressable onPress={() => navigation.navigate('SignIn')} style={styles.footer}>
+              <Text style={[typography.body, styles.footerText]}>
+                Already have an account? <Text style={styles.footerLink}>Sign in</Text>
+              </Text>
+            </Pressable>
+          </Arrive>
+        </View>
+      </NightSky>
+    </View>
   );
 }
 
-// Mirrors JournalScreen's real DreamRow styling so the preview reads as an honest
-// look at the journal, not a mocked-up stand-in. Muted opacity + no press handling
-// signal "example" without hiding the copy that's meant to sell the feature.
+// Mirrors the real journal rows so the preview is an honest look at the feature. Plain
+// translucent glass: no border, no shadow, no press handling (it is an example).
 function ExampleDreamCard({ dream }: { dream: ExampleDream }) {
-  const tint = dream.lucid ? colors.status.lucid : colors.accent.primary;
   return (
-    <Card style={styles.dreamCard}>
-      <View
-        style={[
-          styles.avatar,
-          { backgroundColor: dream.lucid ? colors.status.lucidMuted : colors.accent.primaryMuted },
-        ]}
-      >
-        {dream.lucid ? (
-          <Sparkles color={tint} size={18} strokeWidth={1.75} />
-        ) : (
-          <Moon color={tint} size={18} strokeWidth={1.75} />
-        )}
+    <View style={styles.card}>
+      <View style={styles.avatar}>
+        <Moon color={colors.text.secondary} size={18} strokeWidth={1.5} />
       </View>
-      <View style={styles.dreamBody}>
-        <View style={styles.dreamCardHeader}>
+      <View style={styles.cardBody}>
+        <View style={styles.cardHeader}>
           <Text style={[typography.bodyMedium, styles.dreamTitle]} numberOfLines={1}>
             {dream.title}
           </Text>
@@ -116,58 +107,68 @@ function ExampleDreamCard({ dream }: { dream: ExampleDream }) {
             </View>
           ) : null}
         </View>
-        <Text style={[typography.body, styles.dreamContent]} numberOfLines={2}>
+        <Text style={[typography.body, styles.dreamContent]} numberOfLines={1}>
           {dream.content}
         </Text>
         <Text style={[typography.caption, styles.dreamDate]}>{dream.date}</Text>
       </View>
-    </Card>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: {
+  root: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+  },
+  sky: {
     flex: 1,
   },
-  scrollContent: {
-    paddingTop: spacing.xl,
-    gap: spacing.xl,
+  content: {
+    flex: 1,
+    paddingHorizontal: spacing.screenPadding,
   },
-  hero: {
-    gap: spacing.sm,
+  skySpace: {
+    height: '12%',
+    minHeight: spacing.md,
+    flexShrink: 1000,
+  },
+  scroll: {
+    flexGrow: 0,
+    flexShrink: 1,
   },
   headline: {
     color: colors.text.primary,
   },
   subheadline: {
     color: colors.text.secondary,
+    marginTop: spacing.sm,
   },
-  previewSection: {
-    gap: spacing.sm,
+  cards: {
+    marginTop: spacing.lg,
+    gap: spacing.sm + spacing.xs / 2,
   },
-  previewLabel: {
-    color: colors.text.tertiary,
-  },
-  previewList: {
-    gap: spacing.sm,
-    opacity: 0.82,
-  },
-  dreamCard: {
+  card: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: spacing.sm + spacing.xs,
+    padding: spacing.md,
+    borderRadius: radius.glass,
+    backgroundColor: colors.surface.glassSoft,
+    pointerEvents: 'none',
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface.glass,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dreamBody: {
+  cardBody: {
     flex: 1,
     gap: spacing.xs,
   },
-  dreamCardHeader: {
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -184,27 +185,32 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
   },
   lucidBadge: {
-    backgroundColor: 'rgba(52, 211, 153, 0.12)',
+    backgroundColor: colors.accent.primary,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
   },
   lucidBadgeText: {
-    color: colors.status.lucid,
+    color: colors.text.primary,
+  },
+  flexSpacer: {
+    flex: 1,
+    minHeight: spacing.md,
   },
   actions: {
     gap: spacing.md,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.lg,
   },
   cta: {
     alignSelf: 'stretch',
   },
   footer: {
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
   },
   footerText: {
     color: colors.text.secondary,
+    textAlign: 'center',
   },
   footerLink: {
     color: colors.accent.primary,
