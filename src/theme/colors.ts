@@ -10,6 +10,8 @@ export const colors = {
     translucent: 'rgba(26, 32, 53, 0.72)',
     // Frosted-glass fill for floating controls and secondary surfaces (design.md section 4).
     glass: 'rgba(255, 255, 255, 0.10)',
+    // The glass fill one step brighter, for a focused glass input.
+    glassFocused: 'rgba(255, 255, 255, 0.16)',
   },
   border: {
     default: '#2A3350',

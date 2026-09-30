@@ -1,5 +1,5 @@
 import { BlurView } from 'expo-blur';
-import { ChevronLeft } from 'lucide-react-native';
+import { ArrowLeft } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
 import { AnimatedPressable } from './AnimatedPressable';
 import { colors, radius } from '../theme';
@@ -22,7 +22,7 @@ export function GlassBackButton({ onPress, accessibilityLabel = 'Go back' }: Gla
       <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
       {/* Wrapped in a View so it stacks above the blur layer on web; a bare SVG would not. */}
       <View>
-        <ChevronLeft color={colors.text.primary} size={20} strokeWidth={1.75} />
+        <ArrowLeft color={colors.text.primary} size={20} strokeWidth={1.5} />
       </View>
     </AnimatedPressable>
   );

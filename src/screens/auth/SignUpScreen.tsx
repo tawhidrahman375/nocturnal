@@ -1,10 +1,10 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Moon } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Arrive } from '../../components/Arrive';
+import { AuthLayout } from '../../components/AuthLayout';
 import { Button } from '../../components/Button';
-import { GlassBackButton } from '../../components/GlassBackButton';
-import { ScreenContainer } from '../../components/ScreenContainer';
 import { TextField } from '../../components/TextField';
 import { useAuth } from '../../hooks/useAuth';
 import { AuthStackParamList } from '../../navigation/types';
@@ -21,6 +21,12 @@ export function SignUpScreen({ navigation }: Props) {
   const [confirmationSent, setConfirmationSent] = useState(false);
 
   const handleSignUp = async () => {
+    // The button stays solid blue rather than greying out while the form is incomplete, so
+    // an early tap says what is missing instead.
+    if (!email.trim() || password.length < 6) {
+      setError('Enter your email and a password of at least 6 characters.');
+      return;
+    }
     setError(null);
     setLoading(true);
     const { error: signUpError } = await signUpWithEmail(email.trim(), password);
@@ -34,89 +40,83 @@ export function SignUpScreen({ navigation }: Props) {
 
   if (confirmationSent) {
     return (
-      <ScreenContainer glow>
-        <Arrive style={styles.content}>
-          <View style={styles.header}>
-            <Text style={[typography.displayMd, styles.title]}>Check your email</Text>
-            <Text style={[typography.body, styles.subtitle]}>
-              We sent a confirmation link to {email}. Verify to start logging your dreams.
-            </Text>
-          </View>
-          <Button label="Back to sign in" onPress={() => navigation.navigate('SignIn')} />
-        </Arrive>
-      </ScreenContainer>
+      <AuthLayout onBack={() => navigation.navigate('Welcome')} backLabel="Back to welcome">
+        <Moon color={colors.text.secondary} size={32} strokeWidth={1.5} />
+        <View style={styles.header}>
+          <Text style={[typography.heroTitle, styles.title]}>Check your email</Text>
+          <Text style={[typography.body, styles.subtitle]}>
+            We sent a confirmation link to {email}. Verify to start logging your dreams.
+          </Text>
+        </View>
+        <Button
+          label="Back to sign in"
+          labelColor={colors.text.primary}
+          onPress={() => navigation.navigate('SignIn')}
+          style={styles.button}
+        />
+      </AuthLayout>
     );
   }
 
   return (
-    <ScreenContainer glow>
-      <View style={styles.backRow}>
-        <GlassBackButton
-          onPress={() => navigation.navigate('Welcome')}
-          accessibilityLabel="Back to welcome"
+    <AuthLayout onBack={() => navigation.navigate('Welcome')} backLabel="Back to welcome">
+      <Moon color={colors.text.secondary} size={32} strokeWidth={1.5} />
+      <View style={styles.header}>
+        <Text style={[typography.heroTitle, styles.title]}>Create your account</Text>
+        <Text style={[typography.body, styles.subtitle]}>Start your journey tonight.</Text>
+      </View>
+
+      <View style={styles.form}>
+        <TextField
+          variant="glass"
+          accessibilityLabel="Email"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          autoComplete="email"
+          keyboardType="email-address"
+          placeholder="Email"
+        />
+        <TextField
+          variant="glass"
+          accessibilityLabel="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoCapitalize="none"
+          autoComplete="password-new"
+          placeholder="Password (at least 6 characters)"
         />
       </View>
-      <Arrive style={styles.content}>
-        <View style={styles.header}>
-          <Text style={[typography.displayMd, styles.title]}>Create account</Text>
-          <Text style={[typography.body, styles.subtitle]}>
-            Start building your dream journal and streak.
-          </Text>
-        </View>
 
-        <View style={styles.form}>
-          <TextField
-            label="Email"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            autoComplete="email"
-            keyboardType="email-address"
-            placeholder="you@example.com"
-          />
-          <TextField
-            label="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoCapitalize="none"
-            autoComplete="password-new"
-            placeholder="At least 6 characters"
-          />
-          {error ? (
-            <Arrive from="down">
-              <Text style={[typography.label, styles.error]}>{error}</Text>
-            </Arrive>
-          ) : null}
-          <Button
-            label="Create account"
-            onPress={handleSignUp}
-            loading={loading}
-            disabled={!email || password.length < 6}
-          />
-        </View>
+      {error ? (
+        <Arrive from="down">
+          <Text style={[typography.label, styles.error]}>{error}</Text>
+        </Arrive>
+      ) : null}
 
-        <Pressable onPress={() => navigation.navigate('SignIn')} style={styles.footer}>
-          <Text style={[typography.body, styles.footerText]}>
-            Already have an account? <Text style={styles.footerLink}>Sign in</Text>
-          </Text>
-        </Pressable>
-      </Arrive>
-    </ScreenContainer>
+      <Button
+        label="Create account"
+        labelColor={colors.text.primary}
+        onPress={handleSignUp}
+        loading={loading}
+        style={styles.button}
+      />
+
+      <Pressable onPress={() => navigation.navigate('SignIn')} style={styles.footer}>
+        <Text style={[typography.body, styles.footerText]}>
+          Already have an account? <Text style={styles.footerLink}>Sign in</Text>
+        </Text>
+      </Pressable>
+    </AuthLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  backRow: {
-    paddingTop: spacing.md,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: spacing.xl,
-  },
   header: {
-    gap: spacing.xs,
+    marginTop: spacing.md,
+    gap: spacing.sm,
+    marginBottom: spacing.xl,
   },
   title: {
     color: colors.text.primary,
@@ -126,18 +126,26 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: spacing.md,
+    marginBottom: spacing.lg,
   },
   error: {
-    color: '#F87171',
+    color: colors.status.danger,
+    marginBottom: spacing.md,
+  },
+  button: {
+    alignSelf: 'stretch',
   },
   footer: {
     alignItems: 'center',
-    paddingTop: spacing.lg,
+    justifyContent: 'center',
+    minHeight: 44,
+    marginTop: spacing.xl,
   },
   footerText: {
     color: colors.text.secondary,
+    textAlign: 'center',
   },
   footerLink: {
-    color: colors.accent.primary,
+    textDecorationLine: 'underline',
   },
 });
