@@ -16,6 +16,7 @@ export const typography: Record<
   | 'heroTitle'
   | 'displayLg'
   | 'displayMd'
+  | 'displaySm'
   | 'heading'
   | 'subheading'
   | 'body'
@@ -49,6 +50,7 @@ export const typography: Record<
   },
   displayLg: { fontFamily: fontFamily.serif, fontSize: 32, lineHeight: 38, letterSpacing: -0.8 },
   displayMd: { fontFamily: fontFamily.serif, fontSize: 26, lineHeight: 32, letterSpacing: -0.5 },
+  displaySm: { fontFamily: fontFamily.serif, fontSize: 24, lineHeight: 30, letterSpacing: -0.4 },
   heading: { fontFamily: fontFamily.serif, fontSize: 20, lineHeight: 26, letterSpacing: -0.3 },
   subheading: { fontFamily: fontFamily.serif, fontSize: 17, lineHeight: 23, letterSpacing: -0.2 },
   body: { fontFamily: fontFamily.regular, fontSize: 16, lineHeight: 24 },

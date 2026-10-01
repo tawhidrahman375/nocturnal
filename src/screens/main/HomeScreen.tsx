@@ -13,6 +13,7 @@ import { TonightRoutineCard } from '../../components/TonightRoutineCard';
 import { WbtbCard } from '../../components/WbtbCard';
 import { useAuth } from '../../hooks/useAuth';
 import { useDreamInsight } from '../../hooks/useDreamInsight';
+import { useBeginnerTrack } from '../../hooks/useBeginnerTrack';
 import { useDreams } from '../../hooks/useDreams';
 import { useMilestoneCheck } from '../../hooks/useMilestoneCheck';
 import { useProfile } from '../../hooks/useProfile';
@@ -23,6 +24,7 @@ export function HomeScreen() {
   const { user } = useAuth();
   const { profile } = useProfile();
   const { dreams } = useDreams();
+  const track = useBeginnerTrack();
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
   // Also owns milestone 3 (first AI insight): useDreamInsight below silently
   // generates (or re-fetches) today's insight on every Home visit, and the
@@ -67,13 +69,32 @@ export function HomeScreen() {
           </Arrive>
 
           <View style={styles.body}>
-            <Arrive delay={40}>
-              <WbtbCard />
-            </Arrive>
-
-            <Arrive delay={80}>
-              <BeginnerTrackCard />
-            </Arrive>
+            {/* Until the track is started it leads the screen as the hero card; afterwards the
+                WBTB card leads. While the flag is still loading only the track's placeholder
+                shows, so the two cards never swap places after first paint. */}
+            {track.isLoading ? (
+              <Arrive delay={40}>
+                <BeginnerTrackCard track={track} />
+              </Arrive>
+            ) : track.startedAt ? (
+              <>
+                <Arrive delay={40}>
+                  <WbtbCard />
+                </Arrive>
+                <Arrive delay={80}>
+                  <BeginnerTrackCard track={track} />
+                </Arrive>
+              </>
+            ) : (
+              <>
+                <Arrive delay={40}>
+                  <BeginnerTrackCard track={track} />
+                </Arrive>
+                <Arrive delay={80}>
+                  <WbtbCard />
+                </Arrive>
+              </>
+            )}
 
             <Arrive delay={120} style={styles.statsRow}>
               <BareStat

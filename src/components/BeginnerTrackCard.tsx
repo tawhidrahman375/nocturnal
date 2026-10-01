@@ -17,9 +17,14 @@ function Eyebrow({ label }: { label: string }) {
   );
 }
 
-export function BeginnerTrackCard() {
+type BeginnerTrackCardProps = {
+  // Owned by the screen, which also uses `startedAt` to decide where this card sits.
+  track: ReturnType<typeof useBeginnerTrack>;
+};
+
+export function BeginnerTrackCard({ track }: BeginnerTrackCardProps) {
   const navigation = useNavigation();
-  const { startedAt, currentDay, completedDays, isLoading } = useBeginnerTrack();
+  const { startedAt, currentDay, completedDays, isLoading } = track;
 
   if (isLoading) {
     return (
@@ -32,15 +37,23 @@ export function BeginnerTrackCard() {
   const open = () => navigation.navigate('BeginnerTrack');
 
   if (!startedAt) {
+    // Not started yet: the card is the screen's hero, so it is roomier and its button spans
+    // the width. The accent bar is a plain View, not a border (design.md bans those).
     return (
-      <View style={styles.card}>
+      <View style={[styles.card, styles.heroCard]}>
+        <View style={styles.accentBar} />
         <Eyebrow label="30-Day Track" />
         <View style={styles.copy}>
-          <Text style={[typography.heading, styles.title]}>30 days to your first lucid dream</Text>
+          <Text style={[typography.displaySm, styles.title]}>30 days to your first lucid dream</Text>
           <Text style={[typography.body, styles.body]}>One new habit each night.</Text>
         </View>
-        <Button label="Start the track" onPress={open} labelColor={colors.text.primary} />
-        <View style={styles.bottomBar} />
+        <Button
+          label="Start the track"
+          onPress={open}
+          labelColor={colors.text.primary}
+          style={styles.heroButton}
+        />
+        <View style={[styles.bottomBar, styles.heroBottomBar]} />
       </View>
     );
   }
@@ -74,6 +87,26 @@ const styles = StyleSheet.create({
   card: {
     gap: spacing.md,
     padding: spacing.cardPadding,
+  },
+  heroCard: {
+    padding: spacing.lg,
+    overflow: 'hidden',
+  },
+  accentBar: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: 4,
+    backgroundColor: colors.accent.primary,
+  },
+  heroButton: {
+    alignSelf: 'stretch',
+  },
+  // Cancels the hero card's larger padding, as bottomBar does for the standard one.
+  heroBottomBar: {
+    marginHorizontal: -spacing.lg,
+    marginBottom: -spacing.lg,
   },
   loadingCard: {
     height: 164,

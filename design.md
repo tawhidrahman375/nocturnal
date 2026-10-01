@@ -44,7 +44,7 @@ Rules:
 ## 3. Typography Rules
 
 - Display/heading font: **Fraunces, weight 600 SemiBold** — use it decisively for all
-  headings. Used for `heroTitle`, `displayLg`, `displayMd`, `heading`, `subheading`,
+  headings. Used for `heroTitle`, `displayLg`, `displayMd`, `displaySm`, `heading`, `subheading`,
   `stat`, `clock`. Moonly's own in-app headings ("Practice", "Dreams Archive") are a bold
   serif — this is real in-app type, not just marketing-slide type.
 - Body font: **Figtree, weights 400 Regular and 500 Medium**, a clean humanist sans. Used
@@ -68,6 +68,7 @@ Values from `src/theme/typography.ts`.
 | `heroTitle`  | Fraunces | 600    | 38px        |                            |
 | `displayLg`  | Fraunces | 600    | 32px        |                            |
 | `displayMd`  | Fraunces | 600    | 26px        |                            |
+| `displaySm`  | Fraunces | 600    | 24px        |                            |
 | `heading`    | Fraunces | 600    | 20px        |                            |
 | `subheading` | Fraunces | 600    | 17px        |                            |
 | `stat`       | Fraunces | 600    | 44px        | large numbers              |
