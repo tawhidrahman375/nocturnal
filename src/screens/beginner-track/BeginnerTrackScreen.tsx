@@ -1,31 +1,114 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ArrowLeft, Circle, CircleCheck, Lock } from 'lucide-react-native';
-import { useState } from 'react';
+import { Circle, CircleCheck, Lock } from 'lucide-react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Circle as SvgCircle, Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { Arrive } from '../../components/Arrive';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { CrossFade } from '../../components/CrossFade';
-import { Panel } from '../../components/Panel';
+import { GlassBackButton } from '../../components/GlassBackButton';
+import { NightSky } from '../../components/NightSky';
 import { PopIn } from '../../components/PopIn';
 import { ProgressBar } from '../../components/ProgressBar';
-import { ScreenContainer } from '../../components/ScreenContainer';
+import { useAuth } from '../../hooks/useAuth';
 import { useBeginnerTrack } from '../../hooks/useBeginnerTrack';
-import { getTrackDay, PHASE_LABELS, TRACK_DAYS, TRACK_LENGTH } from '../../lib/beginnerTrack';
+import {
+  getTrackDay,
+  isSetupConfigured,
+  PHASE_LABELS,
+  SETUP_ACTIONS,
+  TRACK_DAYS,
+  TRACK_LENGTH,
+  TrackSetup,
+} from '../../lib/beginnerTrack';
 import { AppStackParamList } from '../../navigation/types';
 import { colors, radius, spacing, typography } from '../../theme';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'BeginnerTrack'>;
 
+// Whether the configuration today's task asks for is already saved. null while it is being
+// checked (and when the day needs nothing). Re-checked every time this screen regains focus,
+// which is what happens when the setup sheet it opened closes.
+function useSetupConfigured(setup: TrackSetup | undefined) {
+  const { user } = useAuth();
+  const [configured, setConfigured] = useState<boolean | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!setup || !user) return;
+      let ignore = false;
+      isSetupConfigured(setup, user.id)
+        .then((value) => {
+          if (!ignore) setConfigured(value);
+        })
+        .catch(() => {
+          if (!ignore) setConfigured(false);
+        });
+      return () => {
+        ignore = true;
+      };
+    }, [setup, user])
+  );
+
+  return setup ? configured : null;
+}
+
+// Hand-placed dots in the sky's lower half: [x, y, radius, opacity] in a 375x440 box.
+const GLOW_BOX = { w: 375, h: 440 };
+const CLUSTER: readonly (readonly [number, number, number, number])[] = [
+  [58, 120, 1.4, 0.5],
+  [92, 168, 1, 0.35],
+  [140, 96, 1.8, 0.6],
+  [176, 140, 1.1, 0.4],
+  [214, 82, 1.3, 0.45],
+  [252, 128, 1.9, 0.65],
+  [286, 70, 1, 0.35],
+  [318, 150, 1.5, 0.5],
+  [338, 98, 1.1, 0.4],
+  [120, 238, 1.2, 0.4],
+  [196, 214, 1.6, 0.55],
+  [268, 244, 1.1, 0.4],
+  [74, 286, 1.7, 0.5],
+  [232, 310, 1.2, 0.35],
+  [322, 276, 1.4, 0.45],
+  [150, 346, 1, 0.3],
+];
+
+// A soft blue glow rising from the bottom edge and a loose cluster of stars, so the empty
+// lower half of the intro reads as sky, not a void. Static and non-interactive.
+function LowerSky() {
+  return (
+    <Svg
+      width="100%"
+      height="55%"
+      viewBox={`0 0 ${GLOW_BOX.w} ${GLOW_BOX.h}`}
+      preserveAspectRatio="xMidYMax slice"
+      style={styles.lowerSky}
+    >
+      <Defs>
+        <RadialGradient id="trackGlow" cx="50%" cy="100%" r="75%">
+          <Stop offset="0" stopColor={colors.accent.primary} stopOpacity={0.2} />
+          <Stop offset="0.5" stopColor={colors.accent.primary} stopOpacity={0.07} />
+          <Stop offset="1" stopColor={colors.accent.primary} stopOpacity={0} />
+        </RadialGradient>
+      </Defs>
+      <Rect x="0" y="0" width={GLOW_BOX.w} height={GLOW_BOX.h} fill="url(#trackGlow)" />
+      {CLUSTER.map(([x, y, r, opacity]) => (
+        <SvgCircle key={`${x}-${y}`} cx={x} cy={y} r={r} fill={colors.text.primary} opacity={opacity} />
+      ))}
+    </Svg>
+  );
+}
+
 export function BeginnerTrackScreen({ navigation }: Props) {
   const { startedAt, currentDay, completedDays, isLoading, error, start, toggleDay } = useBeginnerTrack();
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  // ScreenContainer only reserves the top safe-area inset here (edges={['top']}), so
-  // the Panel can bleed to the literal screen bottom per DESIGN.md §4 — this screen
-  // has no floating tab bar to clear, so the bottom inset is added by hand instead.
+  // The sky bleeds edge to edge, so both safe-area insets are added by hand.
   const insets = useSafeAreaInsets();
 
   const handleStart = async () => {
@@ -54,44 +137,47 @@ export function BeginnerTrackScreen({ navigation }: Props) {
   };
 
   const todaysTask = currentDay ? getTrackDay(currentDay) : null;
+  const setupConfigured = useSetupConfigured(todaysTask?.setup);
   const isTodayDone = currentDay ? completedDays.has(currentDay) : false;
   const progress = completedDays.size / TRACK_LENGTH;
   const allDone = completedDays.size >= TRACK_LENGTH;
 
   return (
-    <ScreenContainer edges={['top']} edgeToEdge>
-      <View style={styles.header}>
-        <AnimatedPressable
-          onPress={() => navigation.goBack()}
-          hitSlop={12}
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-        >
-          <ArrowLeft color={colors.text.secondary} size={24} strokeWidth={1.5} />
-        </AnimatedPressable>
-        <View style={styles.headerText}>
-          <Text style={[typography.label, styles.eyebrow]}>30-Day Track</Text>
-          <Text style={[typography.displayMd, styles.title]}>Your first lucid dream</Text>
+    <View style={styles.root}>
+      <NightSky intensity="full" style={styles.sky}>
+        {!isLoading && !startedAt ? <LowerSky /> : null}
+        <View style={[styles.topBar, { paddingTop: insets.top + spacing.lg }]}>
+          <View style={styles.barRow}>
+            <GlassBackButton onPress={() => navigation.goBack()} accessibilityLabel="Back" />
+            {/* Centred on the screen, not on what is left beside the back button. */}
+            <View style={styles.labelWrap}>
+              <Text style={[typography.label, styles.eyebrow]}>30-Day Track</Text>
+            </View>
+          </View>
         </View>
-        <View style={styles.headerSpacer} />
-      </View>
 
-      <Panel>
+        <Text style={[typography.heroTitle, styles.title]}>Your first lucid dream</Text>
+
         {isLoading ? null : !startedAt ? (
-          <Arrive style={[styles.introWrap, { paddingBottom: insets.bottom }]}>
-            <Card style={styles.introCard} elevated>
-              <Text style={[typography.heading, styles.introTitle]}>30 days to your first lucid dream</Text>
+          <Arrive style={styles.intro}>
+            <View style={styles.introCard}>
               <Text style={[typography.body, styles.introBody]}>
                 A day-by-day program: reality checks first, then journaling habits, then Wake Back to
                 Bed, then MILD, building one on top of the last.
               </Text>
-            </Card>
+            </View>
             {actionError ? (
               <Arrive from="down">
                 <Text style={[typography.label, styles.errorText]}>{actionError}</Text>
               </Arrive>
             ) : null}
-            <Button label="Start the track" onPress={handleStart} loading={busy} />
+            <Button
+              label="Start the track"
+              labelColor={colors.text.primary}
+              onPress={handleStart}
+              loading={busy}
+              style={styles.startButton}
+            />
           </Arrive>
         ) : (
           <ScrollView
@@ -105,12 +191,12 @@ export function BeginnerTrackScreen({ navigation }: Props) {
                   {completedDays.size}/{TRACK_LENGTH} complete
                 </Text>
               </View>
-              <ProgressBar progress={progress} color={colors.accent.primary} trackColor={colors.surface.card} />
+              <ProgressBar progress={progress} color={colors.accent.primary} trackColor={colors.surface.track} />
             </View>
 
             {allDone ? (
               <Arrive>
-                <Card style={styles.bannerCard} elevated>
+                <Card style={styles.bannerCard}>
                   <Text style={[typography.body, styles.bannerText]}>
                     You&apos;ve completed the 30-day track. These habits are yours to keep.
                   </Text>
@@ -120,7 +206,7 @@ export function BeginnerTrackScreen({ navigation }: Props) {
 
             {todaysTask ? (
               <Arrive delay={40}>
-                <Card style={styles.todayCard} elevated>
+                <Card style={styles.todayCard}>
                   <Text style={[typography.label, styles.todayEyebrow]}>{PHASE_LABELS[todaysTask.phase]}</Text>
                   <Text style={[typography.heading, styles.todayTitle]}>{todaysTask.title}</Text>
                   <Text style={[typography.body, styles.todayBody]}>{todaysTask.description}</Text>
@@ -129,7 +215,11 @@ export function BeginnerTrackScreen({ navigation }: Props) {
                       <Text style={[typography.label, styles.errorText]}>{actionError}</Text>
                     </Arrive>
                   ) : null}
-                  <CrossFade contentKey={isTodayDone ? 'done' : 'pending'}>
+                  <CrossFade
+                    contentKey={
+                      isTodayDone ? 'done' : todaysTask.setup && setupConfigured !== true ? `setup-${setupConfigured}` : 'pending'
+                    }
+                  >
                     {isTodayDone ? (
                       <View style={styles.doneRow}>
                         <PopIn>
@@ -140,8 +230,36 @@ export function BeginnerTrackScreen({ navigation }: Props) {
                           <Text style={[typography.label, styles.undoLink]}>Undo</Text>
                         </AnimatedPressable>
                       </View>
+                    ) : todaysTask.setup && setupConfigured === null ? (
+                      // Still checking whether it is already set up; hold the button's space.
+                      <View style={styles.actionPlaceholder} />
+                    ) : todaysTask.setup && !setupConfigured ? (
+                      // Needs configuring first: the sheet opens over this screen, and
+                      // completing the day only becomes the main action once it is saved.
+                      <View style={styles.setupActions}>
+                        <Button
+                          label={SETUP_ACTIONS[todaysTask.setup].label}
+                          labelColor={colors.text.primary}
+                          onPress={() => navigation.navigate(SETUP_ACTIONS[todaysTask.setup!].route)}
+                          style={styles.fullWidthButton}
+                        />
+                        <Button
+                          label="Mark complete without setting up"
+                          variant="ghost"
+                          size="sm"
+                          onPress={handleToggleToday}
+                          loading={busy}
+                          style={styles.skipSetup}
+                        />
+                      </View>
                     ) : (
-                      <Button label="Mark day complete" onPress={handleToggleToday} loading={busy} />
+                      <Button
+                        label="Mark day complete"
+                        labelColor={colors.text.primary}
+                        onPress={handleToggleToday}
+                        loading={busy}
+                        style={styles.fullWidthButton}
+                      />
                     )}
                   </CrossFade>
                 </Card>
@@ -169,8 +287,8 @@ export function BeginnerTrackScreen({ navigation }: Props) {
             <Text style={[typography.label, styles.errorText]}>{error}</Text>
           </Arrive>
         ) : null}
-      </Panel>
-    </ScreenContainer>
+      </NightSky>
+    </View>
   );
 }
 
@@ -210,46 +328,72 @@ function DayRow({
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-    paddingHorizontal: spacing.screenPadding,
-    gap: spacing.sm,
-  },
-  headerText: {
+  root: {
     flex: 1,
-    alignItems: 'center',
-    gap: spacing.xs / 2,
+    backgroundColor: colors.background.primary,
   },
-  headerSpacer: {
-    width: 24,
+  sky: {
+    flex: 1,
+  },
+  topBar: {
+    paddingHorizontal: spacing.screenPadding,
+  },
+  barRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  // Spans the row and centres the label on it; the back button sits on top at the left.
+  labelWrap: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'none',
   },
   eyebrow: {
-    color: colors.text.tertiary,
+    color: colors.text.secondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   title: {
     color: colors.text.primary,
-    textAlign: 'center',
-  },
-  introWrap: {
-    flex: 1,
-    justifyContent: 'center',
+    marginTop: spacing.lg,
     paddingHorizontal: spacing.screenPadding,
+  },
+  intro: {
+    paddingHorizontal: spacing.screenPadding,
+    marginTop: spacing.md,
     gap: spacing.lg,
   },
+  // Plain translucent glass: no border, shadow or elevation.
   introCard: {
-    gap: spacing.sm,
-  },
-  introTitle: {
-    color: colors.text.primary,
+    padding: spacing.lg,
+    borderRadius: radius.glass,
+    backgroundColor: colors.surface.glassSoft,
   },
   introBody: {
     color: colors.text.secondary,
+  },
+  startButton: {
+    alignSelf: 'stretch',
+  },
+  lowerSky: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    pointerEvents: 'none',
+  },
+  actionPlaceholder: {
+    height: 52,
+  },
+  setupActions: {
+    gap: spacing.xs,
+  },
+  fullWidthButton: {
+    alignSelf: 'stretch',
+  },
+  skipSetup: {
+    alignSelf: 'center',
   },
   scroll: {
     paddingHorizontal: spacing.screenPadding,
@@ -269,12 +413,16 @@ const styles = StyleSheet.create({
   },
   bannerCard: {
     paddingVertical: spacing.sm,
+    backgroundColor: colors.surface.glassSoft,
+    borderRadius: radius.glass,
   },
   bannerText: {
     color: colors.text.primary,
   },
   todayCard: {
     gap: spacing.xs,
+    backgroundColor: colors.surface.glassSoft,
+    borderRadius: radius.glass,
   },
   todayEyebrow: {
     color: colors.text.tertiary,
@@ -339,7 +487,7 @@ const styles = StyleSheet.create({
     color: colors.accent.primary,
   },
   errorText: {
-    color: '#F87171',
+    color: colors.status.danger,
   },
   footerError: {
     paddingHorizontal: spacing.screenPadding,

@@ -1,5 +1,8 @@
+import { fetchRealityCheckSettings } from './realityChecks';
 import { daysBetween, localDateString } from './streaks';
 import { supabase } from './supabase';
+import { isMildIntentionSetTonight } from './tonightRoutine';
+import { fetchOpenSession } from './wbtbSessions';
 import { Tables } from '../types/database';
 
 export type BeginnerTrackProgress = Tables<'beginner_track_progress'>;
@@ -8,11 +11,25 @@ export const TRACK_LENGTH = 30;
 
 export type TrackPhase = 'reality-checks' | 'journaling' | 'wbtb' | 'mild';
 
+// A day whose task needs something configured in the app. The track screen opens that
+// configuration over itself, and only offers "Mark day complete" once it has been saved.
+export type TrackSetup = 'reality-checks' | 'wbtb' | 'mild';
+
 export type TrackDay = {
   day: number;
   phase: TrackPhase;
   title: string;
   description: string;
+  setup?: TrackSetup;
+};
+
+export const SETUP_ACTIONS: Record<
+  TrackSetup,
+  { label: string; route: 'RealityCheckSetup' | 'WbtbSetup' | 'MildPrompt' }
+> = {
+  'reality-checks': { label: 'Set up reality checks', route: 'RealityCheckSetup' },
+  wbtb: { label: "Plan tonight's alarm", route: 'WbtbSetup' },
+  mild: { label: "Set tonight's intention", route: 'MildPrompt' },
 };
 
 export const PHASE_LABELS: Record<TrackPhase, string> = {
@@ -30,7 +47,8 @@ export const TRACK_DAYS: TrackDay[] = [
     phase: 'reality-checks',
     title: 'Turn on reality check reminders',
     description:
-      'Open Reality Checks from your profile and set a schedule. These daytime nudges are the foundation everything else builds on.',
+      'Set a schedule for daytime reality check reminders. These nudges are the foundation everything else builds on.',
+    setup: 'reality-checks',
   },
   {
     day: 2,
@@ -108,7 +126,8 @@ export const TRACK_DAYS: TrackDay[] = [
     day: 14,
     phase: 'wbtb',
     title: 'Meet Wake Back to Bed',
-    description: 'Open Wake Back to Bed and plan tonight\'s alarm. Waking mid-cycle is when lucid dreams become far more likely.',
+    description: "Plan tonight's alarm. Waking mid-cycle is when lucid dreams become far more likely.",
+    setup: 'wbtb',
   },
   {
     day: 15,
@@ -139,6 +158,7 @@ export const TRACK_DAYS: TrackDay[] = [
     phase: 'wbtb',
     title: 'Consistency check',
     description: "Set your WBTB alarm again tonight, even if last night didn't go perfectly. The habit matters more than any single night.",
+    setup: 'wbtb',
   },
   {
     day: 20,
@@ -151,6 +171,7 @@ export const TRACK_DAYS: TrackDay[] = [
     phase: 'mild',
     title: 'Meet MILD',
     description: 'Learn the mantra: "Next time I\'m dreaming, I will remember I\'m dreaming." You\'ll repeat it during tonight\'s wake window.',
+    setup: 'mild',
   },
   {
     day: 22,
@@ -207,6 +228,25 @@ export const TRACK_DAYS: TrackDay[] = [
     description: "Look back over 30 days of practice. Reality checks, journaling, WBTB, and MILD are yours to keep using.",
   },
 ];
+
+// Whether the configuration a day asks for is in place. Each answer comes from the saved data
+// itself, so it stays true however the user got there (this screen's sheet or their profile).
+export async function isSetupConfigured(setup: TrackSetup, userId: string): Promise<boolean> {
+  if (setup === 'reality-checks') {
+    const settings = await fetchRealityCheckSettings(userId);
+    return !!settings?.enabled;
+  }
+  if (setup === 'wbtb') {
+    return (await fetchOpenSession()) !== null;
+  }
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('mild_intention_set_at')
+    .eq('id', userId)
+    .single();
+  if (error) throw new Error(error.message);
+  return isMildIntentionSetTonight(data.mild_intention_set_at);
+}
 
 export function getTrackDay(day: number): TrackDay {
   const clamped = Math.min(Math.max(day, 1), TRACK_LENGTH);
