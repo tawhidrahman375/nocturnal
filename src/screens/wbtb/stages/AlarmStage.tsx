@@ -46,7 +46,7 @@ export function AlarmStage({ session, onBegin, onSkip }: AlarmStageProps) {
       </View>
 
       <View style={styles.actions}>
-        <Button label="I'm awake" onPress={onBegin} />
+        <Button label="I'm awake" labelColor={colors.text.primary} onPress={onBegin} style={styles.primaryAction} />
         <Pressable onPress={onSkip} hitSlop={8} style={styles.skip} accessibilityRole="button">
           <Text style={[typography.bodyMedium, styles.skipText]}>Skip tonight</Text>
         </Pressable>
@@ -107,6 +107,10 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: spacing.sm,
+  },
+  // Full width inside the screen's 24px side padding, like the other primary buttons.
+  primaryAction: {
+    alignSelf: 'stretch',
   },
   skip: {
     alignItems: 'center',

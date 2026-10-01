@@ -48,7 +48,9 @@ export function MildPromptScreen() {
   const stateKey = profileLoading ? 'loading' : alreadyDone ? 'done' : mantraLoading ? 'generating' : 'ready';
 
   return (
-    <ScreenContainer edges={['top', 'bottom']}>
+    // edgeToEdge: ScreenContainer's own 24px side padding was what left dark bars down both sides
+    // of the sky. The header and body below already pad themselves.
+    <ScreenContainer edges={['top', 'bottom']} edgeToEdge>
       <NightSky intensity="subtle" style={styles.sky}>
         <View style={styles.header}>
           <Text style={[typography.label, styles.eyebrow]}>Tonight</Text>

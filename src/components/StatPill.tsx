@@ -49,6 +49,6 @@ const styles = StyleSheet.create({
   },
   label: {
     color: colors.text.primary,
-    fontWeight: '700',
+    fontWeight: '500',
   },
 });

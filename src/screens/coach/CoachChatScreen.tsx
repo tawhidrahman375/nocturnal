@@ -35,7 +35,7 @@ const GREETING: CoachMessage = {
   user_id: '',
   role: 'assistant',
   content:
-    'Hi, I am Cleo, your lucid dreaming coach. Ask me about your dreams, your technique, or how to have your first lucid dream tonight.',
+    "Hi, I'm Cleo, your lucid dreaming coach. Ask me about your dreams, your technique, or how to have your first lucid dream tonight.",
   created_at: new Date(0).toISOString(),
 };
 
