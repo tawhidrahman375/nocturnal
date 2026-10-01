@@ -234,24 +234,15 @@ export function BeginnerTrackScreen({ navigation }: Props) {
                       // Still checking whether it is already set up; hold the button's space.
                       <View style={styles.actionPlaceholder} />
                     ) : todaysTask.setup && !setupConfigured ? (
-                      // Needs configuring first: the sheet opens over this screen, and
-                      // completing the day only becomes the main action once it is saved.
-                      <View style={styles.setupActions}>
-                        <Button
-                          label={SETUP_ACTIONS[todaysTask.setup].label}
-                          labelColor={colors.text.primary}
-                          onPress={() => navigation.navigate(SETUP_ACTIONS[todaysTask.setup!].route)}
-                          style={styles.fullWidthButton}
-                        />
-                        <Button
-                          label="Mark complete without setting up"
-                          variant="ghost"
-                          size="sm"
-                          onPress={handleToggleToday}
-                          loading={busy}
-                          style={styles.skipSetup}
-                        />
-                      </View>
+                      // Needs configuring first: the sheet opens over this screen. There is no
+                      // way to complete the day without it; "Mark day complete" only appears
+                      // once the setup has been saved.
+                      <Button
+                        label={SETUP_ACTIONS[todaysTask.setup].label}
+                        labelColor={colors.text.primary}
+                        onPress={() => navigation.navigate(SETUP_ACTIONS[todaysTask.setup!].route)}
+                        style={styles.fullWidthButton}
+                      />
                     ) : (
                       <Button
                         label="Mark day complete"
@@ -386,14 +377,8 @@ const styles = StyleSheet.create({
   actionPlaceholder: {
     height: 52,
   },
-  setupActions: {
-    gap: spacing.xs,
-  },
   fullWidthButton: {
     alignSelf: 'stretch',
-  },
-  skipSetup: {
-    alignSelf: 'center',
   },
   scroll: {
     paddingHorizontal: spacing.screenPadding,
