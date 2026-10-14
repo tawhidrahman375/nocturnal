@@ -34,7 +34,7 @@ export function AuthLayout({ onBack, backLabel = 'Back', children }: AuthLayoutP
           <Arrive>{children}</Arrive>
         </ScrollView>
 
-        <View style={[styles.backButton, { top: insets.top + spacing.sm }]}>
+        <View style={[styles.backButton, { top: insets.top + spacing.screenPadding }]}>
           <GlassBackButton onPress={onBack} accessibilityLabel={backLabel} />
         </View>
       </NightSky>

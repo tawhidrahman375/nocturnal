@@ -85,9 +85,10 @@ export function ProductPreviewScreen({ navigation }: Props) {
           </Arrive>
         </View>
 
-        {/* design.md section 3g: back is a glass pill in the top left, below the status bar. */}
-        <View style={[styles.backButton, { top: insets.top + spacing.sm }]}>
-          <GlassBackButton onPress={() => navigation.goBack()} accessibilityLabel="Back to welcome" />
+        {/* design.md section 3g: back is a glass pill in the top left, below the status bar. Uses
+            navigate rather than goBack so it transitions exactly like the sign in screen's back. */}
+        <View style={[styles.backButton, { top: insets.top + spacing.screenPadding }]}>
+          <GlassBackButton onPress={() => navigation.navigate('Welcome')} accessibilityLabel="Back to welcome" />
         </View>
       </NightSky>
     </View>
