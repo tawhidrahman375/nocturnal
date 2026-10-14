@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Arrive } from '../../components/Arrive';
 import { Button } from '../../components/Button';
+import { GlassBackButton } from '../../components/GlassBackButton';
 import { NightSky } from '../../components/NightSky';
 import { AuthStackParamList } from '../../navigation/types';
 import { colors, radius, spacing, typography } from '../../theme';
@@ -83,6 +84,11 @@ export function ProductPreviewScreen({ navigation }: Props) {
             </Pressable>
           </Arrive>
         </View>
+
+        {/* design.md section 3g: back is a glass pill in the top left, below the status bar. */}
+        <View style={[styles.backButton, { top: insets.top + spacing.sm }]}>
+          <GlassBackButton onPress={() => navigation.goBack()} accessibilityLabel="Back to welcome" />
+        </View>
       </NightSky>
     </View>
   );
@@ -128,7 +134,12 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing.screenPadding,
   },
+  backButton: {
+    position: 'absolute',
+    left: spacing.screenPadding,
+  },
   skySpace: {
+    // Tall enough that the headline clears the back pill (44pt + its top offset).
     height: '12%',
     minHeight: spacing.md,
     flexShrink: 1000,
