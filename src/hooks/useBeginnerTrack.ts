@@ -4,8 +4,9 @@ import {
   completeTrackDay,
   currentDayNumber,
   fetchBeginnerTrackProgress,
-  fetchCompletedDays,
+  fetchTrackCompletions,
   startBeginnerTrack,
+  trackDayFor,
   uncompleteTrackDay,
 } from '../lib/beginnerTrack';
 import { useAuth } from './useAuth';
@@ -14,6 +15,7 @@ export function useBeginnerTrack() {
   const { user } = useAuth();
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [completedDays, setCompletedDays] = useState<Set<number>>(new Set());
+  const [completedTodayDay, setCompletedTodayDay] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,13 +28,14 @@ export function useBeginnerTrack() {
 
     (async () => {
       try {
-        const [progress, days] = await Promise.all([
+        const [progress, completions] = await Promise.all([
           fetchBeginnerTrackProgress(user.id),
-          fetchCompletedDays(user.id),
+          fetchTrackCompletions(user.id),
         ]);
         if (ignore) return;
         setStartedAt(progress?.started_at ?? null);
-        setCompletedDays(days);
+        setCompletedDays(completions.days);
+        setCompletedTodayDay(completions.completedTodayDay);
         setError(null);
       } catch (e) {
         if (!ignore) setError((e as Error).message);
@@ -63,13 +66,18 @@ export function useBeginnerTrack() {
         next.delete(day);
         return next;
       });
+      setCompletedTodayDay((prev) => (prev === day ? null : prev));
     } else {
       await completeTrackDay(user.id, day);
       setCompletedDays((prev) => new Set(prev).add(day));
+      setCompletedTodayDay(day);
     }
   };
 
-  const currentDay = startedAt ? currentDayNumber(startedAt) : null;
+  const currentDay = startedAt ? trackDayFor(startedAt, completedDays, completedTodayDay) : null;
+  // How many calendar days the track is running behind. Never shown as a penalty: it is what
+  // lets the screen say "nothing was lost, pick up where you are".
+  const daysBehind = startedAt && currentDay ? Math.max(0, currentDayNumber(startedAt) - currentDay) : 0;
 
-  return { startedAt, currentDay, completedDays, isLoading, error, start, toggleDay };
+  return { startedAt, currentDay, daysBehind, completedDays, isLoading, error, start, toggleDay };
 }

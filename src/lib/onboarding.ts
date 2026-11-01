@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TablesUpdate } from '../types/database';
 import { supabase } from './supabase';
 
@@ -39,6 +40,7 @@ export type OnboardingAnswers = {
   mainGoal: MainGoal;
   dreamsPerWeek: DreamsPerWeek;
   naturalWakeMinutes: number;
+  bedtimeMinutes: number;
   triedTechniques: TriedTechnique[];
 };
 
@@ -52,6 +54,13 @@ export async function saveOnboardingAnswers(userId: string, answers: OnboardingA
   };
   const { error } = await supabase.from('profiles').update(patch).eq('id', userId);
   if (error) throw new Error(error.message);
+
+  // The bedtime they gave is when the nightly MILD prompt fires, so it lands in the same
+  // column the notification settings screen edits.
+  const { error: bedtimeError } = await supabase
+    .from('notification_settings')
+    .upsert({ user_id: userId, mild_prompt_time_minutes: answers.bedtimeMinutes }, { onConflict: 'user_id' });
+  if (bedtimeError) throw new Error(bedtimeError.message);
 }
 
 export type OnboardingPrediction = {
@@ -94,4 +103,75 @@ export function predictOutcome(answers: OnboardingAnswers): OnboardingPrediction
     headline: 'Follow the 30 day track and you could be lucid dreaming within a month.',
     detail,
   };
+}
+
+// --- Starter plan ------------------------------------------------------------------------
+//
+// What the quiz hands back before the paywall: a dream type, a technique to begin with and a
+// first step on times the user chose. Saved on the device so the paywall can say it is
+// protecting something that is already theirs.
+
+export type StarterPlan = {
+  dreamType: string;
+  technique: string;
+  techniqueWhy: string;
+  firstStep: string;
+};
+
+const DREAM_TYPE_BY_GOAL: Record<MainGoal, string> = {
+  first_lucid_dream: 'Awakening Dreamer',
+  more_consistent: 'Rising Lucid Dreamer',
+  explore_experiment: 'Dream Explorer',
+  self_discovery: 'Dream Interpreter',
+};
+
+// Beginners begin with MILD; anyone who already has it moves on to the next piece of the
+// stack they have not tried, in the order that builds on what they know.
+function startingTechnique(tried: TriedTechnique[]): { technique: string; why: string } {
+  if (!tried.includes('mild')) {
+    return { technique: 'MILD', why: 'The most beginner-friendly technique, and it pairs with a dream journal.' };
+  }
+  if (!tried.includes('wbtb')) {
+    return { technique: 'Wake Back To Bed', why: 'You know MILD. Waking mid-night first makes it far more likely to work.' };
+  }
+  if (!tried.includes('ssild')) {
+    return { technique: 'SSILD', why: 'A light, sensory technique that stacks on the wake window you already know.' };
+  }
+  return { technique: 'WILD', why: "You've covered the rest. Entering a dream straight from waking is the next level." };
+}
+
+function formatClock(minutes: number) {
+  const date = new Date();
+  date.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
+  return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+
+export function buildStarterPlan(answers: OnboardingAnswers): StarterPlan {
+  const { technique, why } = startingTechnique(answers.triedTechniques);
+  const morning = (answers.naturalWakeMinutes + 15) % (24 * 60);
+  return {
+    dreamType: DREAM_TYPE_BY_GOAL[answers.mainGoal],
+    technique,
+    techniqueWhy: why,
+    firstStep: `Tonight at ${formatClock(answers.bedtimeMinutes)}, set your intention. Tomorrow at ${formatClock(morning)}, write down what you remember.`,
+  };
+}
+
+const STARTER_PLAN_KEY_PREFIX = 'nocturnal:starter-plan:';
+
+export async function saveStarterPlan(userId: string, plan: StarterPlan) {
+  try {
+    await AsyncStorage.setItem(STARTER_PLAN_KEY_PREFIX + userId, JSON.stringify(plan));
+  } catch {
+    // The paywall just won't show the plan strip.
+  }
+}
+
+export async function loadStarterPlan(userId: string): Promise<StarterPlan | null> {
+  try {
+    const raw = await AsyncStorage.getItem(STARTER_PLAN_KEY_PREFIX + userId);
+    return raw ? (JSON.parse(raw) as StarterPlan) : null;
+  } catch {
+    return null;
+  }
 }

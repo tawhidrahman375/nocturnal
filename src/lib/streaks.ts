@@ -1,3 +1,4 @@
+import { getPauseRanges, pausedDaySet } from './pause';
 import { supabase } from './supabase';
 
 const MS_PER_DAY = 86_400_000;
@@ -57,6 +58,18 @@ function countMondaysBetween(startExclusiveStr: string, endInclusiveStr: string)
   return count;
 }
 
+// Days strictly between two dates that were neither logged-over nor paused — the days that
+// would actually count as missed. A pause (vacation mode) makes its days free.
+function missedDaysBetween(a: string, b: string, pausedDays: Set<string>) {
+  const gap = daysBetween(a, b);
+  let missed = 0;
+  for (let offset = 1; offset < gap; offset++) {
+    const day = new Date(Date.parse(a) + offset * MS_PER_DAY).toISOString().slice(0, 10);
+    if (!pausedDays.has(day)) missed += 1;
+  }
+  return missed;
+}
+
 // Freeze-aware streak calculation. Dreams are never deleted, so — like computeStreaks —
 // this recomputes from full history every call rather than reading back a mutable token
 // balance. That's deliberate: it's what makes this safe to call many times a day (every
@@ -64,10 +77,12 @@ function countMondaysBetween(startExclusiveStr: string, endInclusiveStr: string)
 // weekly token economy (1 at signup, +1 every Monday, capped at 2) is simulated
 // chronologically from account creation up to `today`, spending a token on any single
 // missed day it can cover along the way; a gap of 2+ missed days always breaks the run.
+// Days inside a pause (`pausedDays`) are not missed at all.
 export function computeStreaksWithFreezes(
   dreamedDates: string[],
   accountCreatedAt: Date,
-  today: Date = new Date()
+  today: Date = new Date(),
+  pausedDays: Set<string> = new Set()
 ) {
   const uniqueDays = [...new Set(dreamedDates)].sort();
   const todayStr = localDateString(today);
@@ -88,10 +103,10 @@ export function computeStreaksWithFreezes(
   let runLength = 1;
   for (let i = 1; i < uniqueDays.length; i++) {
     replenishThrough(uniqueDays[i]);
-    const gap = daysBetween(uniqueDays[i - 1], uniqueDays[i]);
-    if (gap === 1) {
+    const missed = missedDaysBetween(uniqueDays[i - 1], uniqueDays[i], pausedDays);
+    if (missed === 0) {
       runLength += 1;
-    } else if (gap === 2 && freezes > 0) {
+    } else if (missed === 1 && freezes > 0) {
       freezes -= 1;
       runLength += 1;
     } else {
@@ -102,13 +117,13 @@ export function computeStreaksWithFreezes(
 
   const lastDay = uniqueDays[uniqueDays.length - 1];
   replenishThrough(todayStr);
-  const tailGap = daysBetween(lastDay, todayStr);
+  const tailMissed = daysBetween(lastDay, todayStr) <= 0 ? 0 : missedDaysBetween(lastDay, todayStr, pausedDays);
 
   let currentStreak: number;
   let freezeUsedForCurrentStreak = false;
-  if (tailGap === 0 || tailGap === 1) {
+  if (tailMissed === 0) {
     currentStreak = runLength;
-  } else if (tailGap === 2 && freezes > 0) {
+  } else if (tailMissed === 1 && freezes > 0) {
     freezes -= 1;
     currentStreak = runLength;
     freezeUsedForCurrentStreak = true;
@@ -128,10 +143,13 @@ export async function refreshStreakForUser(userId: string) {
   if (dreamsError) throw new Error(dreamsError.message);
   if (profileError) throw new Error(profileError.message);
 
+  const pausedDays = pausedDaySet(await getPauseRanges(userId));
   const { currentStreak, longestStreak, freezesRemaining, freezeUsedForCurrentStreak } =
     computeStreaksWithFreezes(
       (dreams ?? []).map((row) => row.dreamed_at),
-      new Date(profile.created_at)
+      new Date(profile.created_at),
+      new Date(),
+      pausedDays
     );
 
   if (freezeUsedForCurrentStreak) {

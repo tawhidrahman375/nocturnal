@@ -17,19 +17,22 @@ import {
   DreamsPerWeek,
   EXPERIENCE_OPTIONS,
   ExperienceLevel,
+  buildStarterPlan,
   GOAL_OPTIONS,
   MainGoal,
   OnboardingAnswers,
   OnboardingPrediction,
   predictOutcome,
   saveOnboardingAnswers,
+  saveStarterPlan,
+  StarterPlan,
   TECHNIQUE_TRIED_OPTIONS,
   TriedTechnique,
 } from '../../lib/onboarding';
 import { minutesSinceMidnight, timeOfDayFromMinutes } from '../../lib/realityChecks';
-import { colors, spacing, typography } from '../../theme';
+import { colors, radius, spacing, typography } from '../../theme';
 
-const QUESTION_COUNT = 5;
+const QUESTION_COUNT = 6;
 // Minimum time the "calculating" phase holds, regardless of how fast the save resolves,
 // so the reveal always feels considered rather than tied to network latency.
 const CALCULATING_MIN_MS = 1400;
@@ -52,6 +55,12 @@ function defaultWakeTime() {
   return date;
 }
 
+function defaultBedtime() {
+  const date = new Date();
+  date.setHours(23, 0, 0, 0);
+  return date;
+}
+
 type Phase = 'quiz' | 'calculating' | 'revealed';
 
 export function OnboardingQuizScreen({ onComplete }: OnboardingQuizScreenProps) {
@@ -61,6 +70,7 @@ export function OnboardingQuizScreen({ onComplete }: OnboardingQuizScreenProps) 
   const [mainGoal, setMainGoal] = useState<MainGoal | null>(null);
   const [dreamsPerWeek, setDreamsPerWeek] = useState<DreamsPerWeek | null>(null);
   const [wakeTime, setWakeTime] = useState(defaultWakeTime);
+  const [bedtime, setBedtime] = useState(defaultBedtime);
   const [triedTechniques, setTriedTechniques] = useState<TriedTechnique[]>([]);
   // "None" has to be chosen, not just the absence of a choice, or the action button would
   // show before anything was picked. Saved as an empty techniques list.
@@ -68,6 +78,7 @@ export function OnboardingQuizScreen({ onComplete }: OnboardingQuizScreenProps) 
   const [phase, setPhase] = useState<Phase>('quiz');
   const [saveError, setSaveError] = useState<string | null>(null);
   const [prediction, setPrediction] = useState<OnboardingPrediction | null>(null);
+  const [plan, setPlan] = useState<StarterPlan | null>(null);
 
   const advance = () => setStep((s) => Math.min(s + 1, QUESTION_COUNT - 1));
 
@@ -93,6 +104,7 @@ export function OnboardingQuizScreen({ onComplete }: OnboardingQuizScreenProps) 
       mainGoal,
       dreamsPerWeek,
       naturalWakeMinutes: minutesSinceMidnight(wakeTime),
+      bedtimeMinutes: minutesSinceMidnight(bedtime),
       triedTechniques,
     };
 
@@ -101,6 +113,9 @@ export function OnboardingQuizScreen({ onComplete }: OnboardingQuizScreenProps) 
         saveOnboardingAnswers(user.id, answers),
         new Promise((resolve) => setTimeout(resolve, CALCULATING_MIN_MS)),
       ]);
+      const starterPlan = buildStarterPlan(answers);
+      await saveStarterPlan(user.id, starterPlan);
+      setPlan(starterPlan);
       setPrediction(predictOutcome(answers));
       setPhase('revealed');
       // No properties: the quiz answers (including wake time) stay out of analytics.
@@ -112,7 +127,7 @@ export function OnboardingQuizScreen({ onComplete }: OnboardingQuizScreenProps) 
   };
 
   if (phase !== 'quiz') {
-    return <OutcomeReveal phase={phase} prediction={prediction} onDone={onComplete} />;
+    return <OutcomeReveal phase={phase} prediction={prediction} plan={plan} onDone={onComplete} />;
   }
 
   return (
@@ -165,6 +180,23 @@ export function OnboardingQuizScreen({ onComplete }: OnboardingQuizScreenProps) 
         ) : null}
 
         {step === 4 ? (
+          <StepFrame
+            title="And what time do you usually go to bed?"
+            subtitle="We'll nudge you to set your intention right then."
+            footer={<FooterAction label="Continue" visible onPress={advance} />}
+          >
+            <View style={styles.timeWrap}>
+              <TimeStepper
+                value={bedtime}
+                onChange={setBedtime}
+                min={timeOfDayFromMinutes(0)}
+                max={timeOfDayFromMinutes(23 * 60 + 45)}
+              />
+            </View>
+          </StepFrame>
+        ) : null}
+
+        {step === 5 ? (
           <StepFrame
             title="Have you tried any techniques before?"
             subtitle="Pick as many as apply."
@@ -336,10 +368,12 @@ function QuestionStep<T extends string>({
 function OutcomeReveal({
   phase,
   prediction,
+  plan,
   onDone,
 }: {
   phase: Exclude<Phase, 'quiz'>;
   prediction: OnboardingPrediction | null;
+  plan: StarterPlan | null;
   onDone: () => void;
 }) {
   return (
@@ -362,22 +396,58 @@ function OutcomeReveal({
                 style={[styles.haloRing, styles.haloInner]}
               />
             </View>
-            <Text style={[typography.label, styles.calculatingText]}>Finding your path...</Text>
+            <Text style={[typography.label, styles.calculatingText]}>Building your plan...</Text>
           </View>
         ) : (
           <StepFrame
             eyebrow="Your path"
             title={prediction?.headline ?? ''}
             subtitle={prediction?.detail}
-            footer={<FooterAction label="Let's go" visible onPress={onDone} />}
-          />
+            footer={<FooterAction label="Keep my plan" visible onPress={onDone} />}
+          >
+            {plan ? (
+              <Arrive delay={120} style={styles.planStack}>
+                <PlanRow label="Your dream type" value={plan.dreamType} />
+                <PlanRow label="Start with" value={plan.technique} note={plan.techniqueWhy} />
+                <PlanRow label="Your first step" value={plan.firstStep} />
+              </Arrive>
+            ) : null}
+          </StepFrame>
         )}
       </CrossFade>
     </Shell>
   );
 }
 
+function PlanRow({ label, value, note }: { label: string; value: string; note?: string }) {
+  return (
+    <View style={styles.planRow}>
+      <Text style={[typography.overline, styles.planLabel]}>{label}</Text>
+      <Text style={[typography.subheading, styles.planValue]}>{value}</Text>
+      {note ? <Text style={[typography.footnote, styles.planNote]}>{note}</Text> : null}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  planStack: {
+    gap: spacing.sm,
+  },
+  planRow: {
+    gap: spacing.xs / 2,
+    padding: spacing.cardPadding,
+    borderRadius: radius.card,
+    backgroundColor: colors.surface.glassSoft,
+  },
+  planLabel: {
+    color: colors.text.tertiary,
+  },
+  planValue: {
+    color: colors.text.primary,
+  },
+  planNote: {
+    color: colors.text.secondary,
+  },
   root: {
     flex: 1,
     backgroundColor: colors.background.primary,

@@ -1,7 +1,9 @@
-import { Flame, LucideIcon, Moon, Sparkles } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
+import { Flame, GraduationCap, LucideIcon, Moon, Sparkles } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Arrive } from './Arrive';
+import { Button } from './Button';
 import { PopIn } from './PopIn';
 import { MilestoneType } from '../hooks/useMilestoneCheck';
 import { useReducedMotion } from '../hooks/useReducedMotion';
@@ -17,25 +19,38 @@ const PARTICLE_COLORS = [GOLD, '#FFFFFF'];
 
 const MILESTONE_CONTENT: Record<
   MilestoneType,
-  { icon: LucideIcon; headline: string; subheadline: string; autoDismiss: boolean }
+  { icon: LucideIcon; headline: string; subheadline: string; autoDismiss: boolean; cta: string }
 > = {
   firstLucidDream: {
     icon: Moon,
     headline: 'Your first lucid dream',
-    subheadline: "You just proved it's possible. This is only the beginning.",
-    autoDismiss: true,
+    subheadline:
+      "You knew you were dreaming, and you wrote it down. That is the whole skill, and you have it now. Everything from here is about doing it again.",
+    autoDismiss: false,
+    cta: 'Keep it going',
   },
   streak7: {
     icon: Flame,
-    headline: '7 nights in a row',
-    subheadline: 'Your brain is already learning. Keep going.',
-    autoDismiss: true,
+    headline: 'A full week of dreams',
+    subheadline:
+      'Seven nights in a row. Your recall is measurably stronger than it was a week ago, and that is what lucid dreaming is built on.',
+    autoDismiss: false,
+    cta: 'Continue',
   },
   firstInsight: {
     icon: Sparkles,
     headline: 'Your first insight',
     subheadline: 'Nocturnal just found something in your dreams. Tap to explore.',
     autoDismiss: false,
+    cta: 'See what it found',
+  },
+  trackComplete: {
+    icon: GraduationCap,
+    headline: 'Thirty days, done',
+    subheadline:
+      'You built the habit stack: reality checks, recall, Wake Back to Bed and MILD. This was the beginning of the track and the end of the beginning. The toolkit is yours.',
+    autoDismiss: false,
+    cta: 'Take it with me',
   },
 };
 
@@ -71,6 +86,7 @@ export function MilestoneOverlay({ milestone, visible, onDismiss }: MilestoneOve
     if (!visible || !content) return;
     hasDismissedRef.current = false;
     exitOpacity.setValue(1);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
 
     if (!content.autoDismiss) return;
     const timer = setTimeout(handleDismiss, AUTO_DISMISS_MS);
@@ -98,6 +114,7 @@ export function MilestoneOverlay({ milestone, visible, onDismiss }: MilestoneOve
           </View>
           <Text style={[typography.displayMd, styles.headline]}>{content.headline}</Text>
           <Text style={[typography.body, styles.subheadline]}>{content.subheadline}</Text>
+          <Button label={content.cta} onPress={handleDismiss} style={styles.cta} />
         </Arrive>
       </Animated.View>
     </Modal>
@@ -214,5 +231,9 @@ const styles = StyleSheet.create({
   subheadline: {
     color: colors.text.secondary,
     textAlign: 'center',
+  },
+  cta: {
+    alignSelf: 'center',
+    marginTop: spacing.lg,
   },
 });

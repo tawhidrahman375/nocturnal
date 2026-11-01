@@ -1,15 +1,17 @@
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { Mic, Moon, Plus, Sparkles } from 'lucide-react-native';
+import { CloudOff, Mic, Moon, Plus, Sparkles } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Platform, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 import { Arrive } from '../../components/Arrive';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { DreamCategoryPill } from '../../components/DreamCategoryPill';
+import { EmptyState } from '../../components/EmptyState';
 import { DreamSignRevealOverlay } from '../../components/DreamSignRevealOverlay';
 import { MilestoneOverlay } from '../../components/MilestoneOverlay';
 import { NewDreamSheet } from '../../components/NewDreamSheet';
+import { LoadingView } from '../../components/LoadingView';
 import { NightSky } from '../../components/NightSky';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { useAuth } from '../../hooks/useAuth';
@@ -53,7 +55,7 @@ function groupDreamsByDate(dreams: Dream[]) {
 
 export function JournalScreen() {
   const { user } = useAuth();
-  const { dreams, addDream } = useDreams();
+  const { dreams, isLoading, error, refresh, addDream } = useDreams();
   const [sheetVisible, setSheetVisible] = useState(false);
   const route = useRoute<RouteProp<MainTabParamList, 'Journal'>>();
   const tabNavigation = useNavigation<BottomTabNavigationProp<MainTabParamList, 'Journal'>>();
@@ -62,11 +64,13 @@ export function JournalScreen() {
   // Set by the voice-recording review sheet ("Save to journal"): opens the new-entry sheet
   // already filled with the transcript, and remembers which recording it came from.
   const newDream = route.params?.newDream;
+  // The morning recall and come-back notifications land here with the sheet already open.
+  const compose = route.params?.compose;
   const sections = useMemo(() => groupDreamsByDate(dreams), [dreams]);
   const openSheet = () => setSheetVisible(true);
   const closeSheet = () => {
     setSheetVisible(false);
-    if (newDream) tabNavigation.setParams({ newDream: undefined });
+    if (newDream || compose) tabNavigation.setParams({ newDream: undefined, compose: undefined });
   };
   const { milestone, checkLucidDreamMilestone, dismissMilestone } = useMilestoneCheck();
   const { currentSign, checkForNewSigns, dismissCurrentSign } = useDreamSignReveal();
@@ -107,7 +111,18 @@ export function JournalScreen() {
           </View>
         </Arrive>
 
-        {dreams.length === 0 ? (
+        {isLoading && dreams.length === 0 ? (
+          <LoadingView label="Opening your journal" />
+        ) : error && dreams.length === 0 ? (
+          <View style={styles.emptyWrap}>
+            <EmptyState
+              icon={CloudOff}
+              title="Couldn't open your journal"
+              message="Your dreams are safe. Check your connection and try again."
+              action={{ label: 'Try again', onPress: refresh }}
+            />
+          </View>
+        ) : dreams.length === 0 ? (
           <JournalEmptyState onRecord={openSheet} />
         ) : (
           <Arrive delay={40} style={styles.listWrap}>
@@ -128,9 +143,11 @@ export function JournalScreen() {
 
       <NewDreamSheet
         key={newDream?.key ?? 'blank'}
-        visible={sheetVisible || !!newDream}
+        visible={sheetVisible || !!newDream || !!compose}
         initialContent={newDream?.content}
+        dreamCount={dreams.length}
         onClose={closeSheet}
+        onSeeInsights={() => tabNavigation.navigate('Insights')}
         onSubmit={async (dream) => {
           const { error } = await addDream(dream);
           // The entry is saved, so the recording it came from is finished with. Left in
@@ -139,8 +156,10 @@ export function JournalScreen() {
             deleteRecording(newDream.recordingName);
             notifyRecordingsChanged();
           }
+          if (error) return { error };
           if (dream.is_lucid && user) checkLucidDreamMilestone(user.id);
           if (user) checkForNewSigns(user.id);
+          return { error: null };
         }}
       />
 

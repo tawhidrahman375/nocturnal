@@ -1,3 +1,4 @@
+import { StackActions, useNavigation } from '@react-navigation/native';
 import { AlarmClockOff } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Breathing } from '../../../components/Breathing';
@@ -6,10 +7,13 @@ import { EmptyState } from '../../../components/EmptyState';
 import { TECHNIQUE_CLOSING_LINES, WbtbSession, WbtbStatus, WbtbTechnique } from '../../../lib/wbtb';
 import { colors, spacing, typography } from '../../../theme';
 
+// A session that did not happen is not a failure, and the screen says so. Each one points at
+// the same two ways forward: try again tonight, or log whatever you do remember.
 const ENDED_MESSAGES: Partial<Record<WbtbStatus, string>> = {
-  skipped: 'You skipped this session. Plan another whenever you are ready.',
-  missed: 'The alarm passed without a session. Tonight is a fresh chance.',
-  cancelled: 'This alarm was cancelled.',
+  skipped: 'You skipped this one, and that is fine. If you woke with a dream, log it anyway. It counts.',
+  missed:
+    'Sleeping through the alarm happens to everyone. If you woke up naturally with a dream, log it anyway. Tonight is a fresh chance.',
+  cancelled: 'This alarm was cancelled. Plan another whenever you are ready.',
 };
 
 type ClosedStageProps = {
@@ -18,6 +22,8 @@ type ClosedStageProps = {
 };
 
 export function ClosedStage({ session, onClose }: ClosedStageProps) {
+  const navigation = useNavigation();
+
   if (session.status !== 'completed') {
     return (
       <View style={styles.container}>
@@ -28,7 +34,12 @@ export function ClosedStage({ session, onClose }: ClosedStageProps) {
             message={ENDED_MESSAGES[session.status as WbtbStatus] ?? ''}
           />
         </View>
-        <Button label="Back to home" variant="secondary" onPress={onClose} style={styles.action} />
+        <Button
+          label="Plan tonight's alarm"
+          onPress={() => navigation.dispatch(StackActions.replace('WbtbSetup'))}
+          style={styles.action}
+        />
+        <Button label="Back to home" variant="ghost" onPress={onClose} style={styles.action} />
       </View>
     );
   }
@@ -43,6 +54,9 @@ export function ClosedStage({ session, onClose }: ClosedStageProps) {
             {TECHNIQUE_CLOSING_LINES[session.technique as WbtbTechnique]}
           </Text>
         </Breathing>
+        <Text style={[typography.footnote, styles.nextStep]}>
+          When you wake, stay still and write down whatever you remember before anything else.
+        </Text>
       </View>
       <Pressable onPress={onClose} hitSlop={12} style={styles.closeLink} accessibilityRole="button">
         <Text style={[typography.label, styles.closeText]}>Close</Text>
@@ -64,7 +78,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   action: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
+    alignSelf: 'center',
   },
   sleepTitle: {
     color: colors.text.tertiary,
@@ -72,6 +87,11 @@ const styles = StyleSheet.create({
   mantra: {
     color: colors.text.secondary,
     textAlign: 'center',
+  },
+  nextStep: {
+    color: colors.text.tertiary,
+    textAlign: 'center',
+    maxWidth: 260,
   },
   closeLink: {
     alignItems: 'center',

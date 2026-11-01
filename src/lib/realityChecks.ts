@@ -5,6 +5,8 @@ import {
   cancelRealityChecks,
   scheduleRealityChecks,
 } from './notifications';
+import { isPausedToday } from './pause';
+import { localDateString } from './streaks';
 import { supabase } from './supabase';
 import { Tables, TablesInsert, TablesUpdate } from '../types/database';
 
@@ -105,7 +107,7 @@ export async function saveRealityCheckSettings(userId: string, patch: RealityChe
 }
 
 export async function applyRealityCheckSchedule(settings: RealityCheckSettings, dreamSigns: string[]) {
-  if (!settings.enabled) {
+  if (!settings.enabled || (await isPausedToday(settings.user_id, localDateString(new Date())))) {
     await cancelRealityChecks();
     return;
   }

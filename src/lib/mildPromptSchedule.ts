@@ -1,4 +1,6 @@
 import { cancelMildPrompt, requestMildPromptPermission, scheduleMildPrompt } from './notifications';
+import { isPausedToday } from './pause';
+import { localDateString } from './streaks';
 import { supabase } from './supabase';
 import { RECOMMENDED_SLEEP_MINUTES } from './wbtb';
 
@@ -29,7 +31,7 @@ export async function applyMildPromptSchedule(userId: string) {
       .maybeSingle(),
   ]);
 
-  if (settings?.mild_prompt_enabled === false) {
+  if (settings?.mild_prompt_enabled === false || (await isPausedToday(userId, localDateString(new Date())))) {
     await cancelMildPrompt();
     return;
   }

@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { AlarmClock, Eye, LucideIcon, Mic, Moon, X } from 'lucide-react-native';
+import { AlarmClock, Eye, LucideIcon, Mic, Moon, Sunrise, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Linking, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { AnimatedPressable } from '../../components/AnimatedPressable';
@@ -9,6 +9,7 @@ import { Card } from '../../components/Card';
 import { PrePermissionModal } from '../../components/PrePermissionModal';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { TimeStepper } from '../../components/TimeStepper';
+import { useAuth } from '../../hooks/useAuth';
 import { useDreamSigns } from '../../hooks/useDreamSigns';
 import { useNotificationSettings } from '../../hooks/useNotificationSettings';
 import { usePrePermissionGate } from '../../hooks/usePrePermissionGate';
@@ -30,6 +31,11 @@ import {
   showQuickRecordNotification,
 } from '../../lib/quickRecord';
 import { minutesSinceMidnight, timeOfDayFromMinutes } from '../../lib/realityChecks';
+import {
+  applyRoutineSchedules,
+  isMorningRecallEnabled,
+  setMorningRecallEnabled,
+} from '../../lib/routineSchedule';
 import { AppStackParamList } from '../../navigation/types';
 import { colors, spacing, typography } from '../../theme';
 
@@ -70,6 +76,7 @@ function ToggleRow({
 }
 
 export function NotificationSettingsScreen({ navigation }: Props) {
+  const { user } = useAuth();
   const { profile } = useProfile();
   const { settings, isLoading: settingsLoading, save } = useNotificationSettings();
   const { settings: realityCheckSettings, isLoading: realityCheckLoading, save: saveRealityCheck } =
@@ -87,6 +94,18 @@ export function NotificationSettingsScreen({ navigation }: Props) {
   const [mildPromptTime, setMildPromptTime] = useState(defaultMildPromptTime);
   const [realityCheckEnabled, setRealityCheckEnabled] = useState(true);
   const [wbtbAlarmEnabled, setWbtbAlarmEnabled] = useState(true);
+  // The morning "before it fades" reminder, a little after the wake time given in setup.
+  const [morningRecallEnabled, setMorningRecallEnabledState] = useState(true);
+  useEffect(() => {
+    if (!user) return;
+    let ignore = false;
+    isMorningRecallEnabled(user.id).then((enabled) => {
+      if (!ignore) setMorningRecallEnabledState(enabled);
+    });
+    return () => {
+      ignore = true;
+    };
+  }, [user]);
 
   const loading = settingsLoading || realityCheckLoading;
 
@@ -164,6 +183,10 @@ export function NotificationSettingsScreen({ navigation }: Props) {
         wbtb_alarm_enabled: wbtbAlarmEnabled,
       });
       await saveRealityCheck({ enabled: realityCheckEnabled }, dreamSigns);
+      if (user) {
+        await setMorningRecallEnabled(user.id, morningRecallEnabled);
+        await applyRoutineSchedules(user.id);
+      }
       navigation.goBack();
     } catch (e) {
       setError((e as Error).message);
@@ -216,6 +239,16 @@ export function NotificationSettingsScreen({ navigation }: Props) {
             </View>
           </Arrive>
         ) : null}
+
+        <Arrive delay={60}>
+          <ToggleRow
+            icon={Sunrise}
+            title="Morning recall"
+            body="A nudge shortly after your usual wake time, while the dream is still there."
+            value={morningRecallEnabled}
+            onValueChange={setMorningRecallEnabledState}
+          />
+        </Arrive>
 
         <Arrive delay={80}>
           <ToggleRow

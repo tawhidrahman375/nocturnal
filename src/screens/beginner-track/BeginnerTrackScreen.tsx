@@ -11,11 +11,13 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { CrossFade } from '../../components/CrossFade';
 import { GlassBackButton } from '../../components/GlassBackButton';
+import { MilestoneOverlay } from '../../components/MilestoneOverlay';
 import { NightSky } from '../../components/NightSky';
 import { PopIn } from '../../components/PopIn';
 import { ProgressBar } from '../../components/ProgressBar';
 import { useAuth } from '../../hooks/useAuth';
 import { useBeginnerTrack } from '../../hooks/useBeginnerTrack';
+import { useMilestoneCheck } from '../../hooks/useMilestoneCheck';
 import {
   getTrackDay,
   isSetupConfigured,
@@ -105,7 +107,9 @@ function LowerSky() {
 }
 
 export function BeginnerTrackScreen({ navigation }: Props) {
-  const { startedAt, currentDay, completedDays, isLoading, error, start, toggleDay } = useBeginnerTrack();
+  const { startedAt, currentDay, daysBehind, completedDays, isLoading, error, start, toggleDay } =
+    useBeginnerTrack();
+  const { milestone, triggerTrackCompleteMilestone, dismissMilestone } = useMilestoneCheck();
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   // The sky bleeds edge to edge, so both safe-area insets are added by hand.
@@ -128,7 +132,10 @@ export function BeginnerTrackScreen({ navigation }: Props) {
     setBusy(true);
     setActionError(null);
     try {
+      const completing = !completedDays.has(currentDay);
       await toggleDay(currentDay);
+      // The 30th completed day is an ending, so it gets its own moment, not a full progress bar.
+      if (completing && completedDays.size + 1 >= TRACK_LENGTH) triggerTrackCompleteMilestone();
     } catch (e) {
       setActionError((e as Error).message);
     } finally {
@@ -199,6 +206,17 @@ export function BeginnerTrackScreen({ navigation }: Props) {
                 <Card style={styles.bannerCard}>
                   <Text style={[typography.body, styles.bannerText]}>
                     You&apos;ve completed the 30-day track. These habits are yours to keep.
+                  </Text>
+                </Card>
+              </Arrive>
+            ) : null}
+
+            {daysBehind > 0 && !allDone ? (
+              <Arrive>
+                <Card style={styles.bannerCard}>
+                  <Text style={[typography.body, styles.bannerText]}>
+                    {daysBehind === 1 ? 'You missed a day.' : `You missed ${daysBehind} days.`} Nothing was lost.
+                    The track waits for you, so pick up right where you are.
                   </Text>
                 </Card>
               </Arrive>
@@ -279,6 +297,8 @@ export function BeginnerTrackScreen({ navigation }: Props) {
           </Arrive>
         ) : null}
       </NightSky>
+
+      <MilestoneOverlay milestone={milestone} visible={milestone !== null} onDismiss={dismissMilestone} />
     </View>
   );
 }

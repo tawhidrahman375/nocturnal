@@ -14,7 +14,8 @@ export type MainTabParamList = {
   Home: undefined;
   // `newDream` opens the new-entry sheet pre-filled, from the voice-recording review sheet.
   // `recordingName` ties the entry to its audio so the recording is removed once it is saved.
-  Journal: { newDream?: { key: string; content: string; recordingName: string } } | undefined;
+  // `compose` opens the new-entry sheet empty, from the morning recall and come-back notifications.
+  Journal: { newDream?: { key: string; content: string; recordingName: string }; compose?: boolean } | undefined;
   Insights: undefined;
   Profile: undefined;
 };
@@ -33,6 +34,7 @@ export type AppStackParamList = {
   RealityCheckSetup: undefined;
   RecordDream: undefined;
   BeginnerTrack: undefined;
+  Recap: undefined;
   MildPrompt: undefined;
   CoachChat: undefined;
   NotificationSettings: undefined;

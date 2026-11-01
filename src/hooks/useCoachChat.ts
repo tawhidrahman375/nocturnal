@@ -1,3 +1,4 @@
+import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from './useAuth';
 import {
@@ -71,6 +72,8 @@ export function useCoachChat() {
     try {
       const reply = await requestCoachReply(userText);
       setMessages((prev) => [...prev, reply]);
+      // A soft tap as Cleo's answer lands, so a reply that matters is felt as well as read.
+      Haptics.selectionAsync().catch(() => {});
       setSendError(null);
       failedRef.current = null;
     } catch (e) {

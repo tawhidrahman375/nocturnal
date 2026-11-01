@@ -259,3 +259,108 @@ export async function cancelMildPrompt() {
 export function parseMildPromptNotification(notification: Notifications.Notification) {
   return notification.request.content.data?.type === 'mild-prompt';
 }
+
+const ROUTINE_CHANNEL_ID = 'routine';
+const MORNING_RECALL_ID = 'morning-recall';
+const COME_BACK_IDS = ['come-back-2', 'come-back-5'];
+
+export async function requestRoutinePermission() {
+  if (!notificationsSupported) return true;
+
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync(ROUTINE_CHANNEL_ID, {
+      name: 'Morning recall and check-ins',
+      importance: Notifications.AndroidImportance.DEFAULT,
+    });
+  }
+
+  const current = await Notifications.getPermissionsAsync();
+  if (current.granted) return true;
+  if (!current.canAskAgain) return false;
+
+  const next = await Notifications.requestPermissionsAsync({
+    ios: { allowAlert: true, allowSound: true, allowBadge: false },
+  });
+  return next.granted;
+}
+
+// A DAILY notification shortly after the user's own wake time: the moment a dream is still
+// there to be written down. Like the MILD prompt, one stable identifier, so re-scheduling
+// replaces it.
+export async function scheduleMorningRecall(hour: number, minute: number) {
+  if (!notificationsSupported) return;
+  await Notifications.scheduleNotificationAsync({
+    identifier: MORNING_RECALL_ID,
+    content: {
+      title: 'Before it fades',
+      body: 'What do you remember from last night? Even one image counts.',
+      data: { type: 'morning-recall' },
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour,
+      minute,
+      channelId: ROUTINE_CHANNEL_ID,
+    },
+  });
+}
+
+export async function cancelMorningRecall() {
+  if (!notificationsSupported) return;
+  await cancelAndDismiss([MORNING_RECALL_ID]);
+}
+
+// One-off nudges 2 and 5 days out, at the user's wake time. They are re-scheduled every
+// time the app is opened, so they only ever fire if the user has really been away. Their
+// copy is about the dreams, never about the streak the user is "losing".
+export async function scheduleComeBackNudges(hour: number, minute: number, now: Date = new Date()) {
+  if (!notificationsSupported) return;
+  await cancelComeBackNudges();
+
+  const at = (daysAhead: number) => {
+    const date = new Date(now);
+    date.setDate(date.getDate() + daysAhead);
+    date.setHours(hour, minute, 0, 0);
+    return date;
+  };
+
+  const nudges = [
+    {
+      id: COME_BACK_IDS[0],
+      date: at(2),
+      title: 'Your recall is cooling',
+      body: 'One line about last night is enough to warm it back up.',
+    },
+    {
+      id: COME_BACK_IDS[1],
+      date: at(5),
+      title: 'Your dreams are still here',
+      body: 'No catching up needed. Start with whatever you remember this morning.',
+    },
+  ];
+
+  await Promise.all(
+    nudges.map((nudge) =>
+      Notifications.scheduleNotificationAsync({
+        identifier: nudge.id,
+        content: { title: nudge.title, body: nudge.body, data: { type: 'come-back' } },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: nudge.date,
+          channelId: ROUTINE_CHANNEL_ID,
+        },
+      })
+    )
+  );
+}
+
+export async function cancelComeBackNudges() {
+  if (!notificationsSupported) return;
+  await cancelAndDismiss(COME_BACK_IDS);
+}
+
+// Both of these open the Journal ready to write.
+export function parseRoutineNotification(notification: Notifications.Notification) {
+  const type = notification.request.content.data?.type;
+  return type === 'morning-recall' || type === 'come-back';
+}

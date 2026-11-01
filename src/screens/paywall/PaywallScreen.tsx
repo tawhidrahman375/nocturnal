@@ -10,6 +10,7 @@ import { NightSky } from '../../components/NightSky';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { useAuth } from '../../hooks/useAuth';
 import { PaywallPlan, PaywallVariant, track } from '../../lib/analytics';
+import { loadStarterPlan, StarterPlan } from '../../lib/onboarding';
 import {
   clearPaywallPending,
   DEFAULT_PLAN,
@@ -61,6 +62,18 @@ export function PaywallScreen({ navigation, route }: Props) {
   const [busy, setBusy] = useState<'purchase' | 'restore' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  // The plan the quiz just built for them, so the ask reads as keeping something already theirs.
+  const [starterPlan, setStarterPlan] = useState<StarterPlan | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    let ignore = false;
+    loadStarterPlan(user.id).then((plan) => {
+      if (!ignore) setStarterPlan(plan);
+    });
+    return () => {
+      ignore = true;
+    };
+  }, [user]);
 
   const shownRef = useRef<Stage | null>(null);
 
@@ -252,6 +265,7 @@ export function PaywallScreen({ navigation, route }: Props) {
             busy={busy}
             error={error}
             preview={load.preview}
+            plan={starterPlan}
           />
         ) : (
           <FallbackOffer
@@ -278,6 +292,7 @@ type MainOfferProps = {
   busy: 'purchase' | 'restore' | null;
   error: string | null;
   preview: boolean;
+  plan: StarterPlan | null;
 };
 
 function MainOffer({
@@ -290,6 +305,7 @@ function MainOffer({
   busy,
   error,
   preview,
+  plan,
 }: MainOfferProps) {
   const trialDays = selected?.trialDays ?? null;
   const price = selected ? `${selected.priceString} / ${selected.periodUnit}` : '';
@@ -303,6 +319,15 @@ function MainOffer({
             Understand your dreams, and learn to control them.
           </Text>
         </Arrive>
+
+        {plan ? (
+          <Arrive delay={30} style={styles.planStrip}>
+            <Text style={[typography.overline, styles.planStripLabel]}>Your plan is ready</Text>
+            <Text style={[typography.subheading, styles.planStripValue]}>
+              {plan.dreamType} · starts with {plan.technique}
+            </Text>
+          </Arrive>
+        ) : null}
 
         <Arrive delay={60} style={styles.benefits}>
           {BENEFITS.map((benefit) => (
@@ -498,6 +523,14 @@ const styles = StyleSheet.create({
   eyebrow: { color: colors.accent.primary, marginBottom: spacing.xs },
   title: { color: colors.text.primary },
   subtitle: { color: colors.text.secondary, marginTop: spacing.xs },
+  planStrip: {
+    gap: 2,
+    padding: spacing.cardPadding,
+    borderRadius: radius.card,
+    backgroundColor: colors.surface.glassSoft,
+  },
+  planStripLabel: { color: colors.text.tertiary },
+  planStripValue: { color: colors.text.primary },
   benefits: { gap: spacing.sm },
   benefitRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   benefitText: { flex: 1, color: colors.text.primary },

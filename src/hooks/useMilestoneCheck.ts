@@ -5,7 +5,7 @@ import {
   setLastCelebratedStreakMilestone,
 } from '../lib/milestones';
 
-export type MilestoneType = 'firstLucidDream' | 'streak7' | 'firstInsight';
+export type MilestoneType = 'firstLucidDream' | 'streak7' | 'firstInsight' | 'trackComplete';
 
 // Owns "which milestone overlay (if any) should be showing right now" for whichever
 // screen calls it. Each call site gets its own independent instance on purpose — a
@@ -39,6 +39,8 @@ export function useMilestoneCheck() {
 
   const triggerFirstInsightMilestone = useCallback(() => setMilestone('firstInsight'), []);
 
+  const triggerTrackCompleteMilestone = useCallback(() => setMilestone('trackComplete'), []);
+
   const dismissMilestone = useCallback(() => setMilestone(null), []);
 
   return {
@@ -46,6 +48,7 @@ export function useMilestoneCheck() {
     checkLucidDreamMilestone,
     checkStreakMilestone,
     triggerFirstInsightMilestone,
+    triggerTrackCompleteMilestone,
     dismissMilestone,
   };
 }

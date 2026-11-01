@@ -258,6 +258,40 @@ export function currentDayNumber(startedAt: string, today: Date = new Date()) {
   return Math.min(TRACK_LENGTH, Math.max(1, elapsed + 1));
 }
 
+// Which day the user is on. The calendar sets the pace, but it never leaves anyone behind:
+// a missed day does not reset or skip anything, the track simply waits on the first day not
+// yet done, and "today's" task is that one. A day completed earlier today stays on screen as
+// done until tomorrow instead of the next task appearing straight away.
+export function trackDayFor(
+  startedAt: string,
+  completed: Set<number>,
+  completedTodayDay: number | null,
+  today: Date = new Date()
+) {
+  if (completedTodayDay !== null) return completedTodayDay;
+  const calendarDay = currentDayNumber(startedAt, today);
+  let firstIncomplete = 1;
+  while (firstIncomplete <= TRACK_LENGTH && completed.has(firstIncomplete)) firstIncomplete += 1;
+  return Math.min(calendarDay, firstIncomplete, TRACK_LENGTH);
+}
+
+export async function fetchTrackCompletions(userId: string) {
+  const { data, error } = await supabase
+    .from('beginner_track_completions')
+    .select('day_number, completed_at')
+    .eq('user_id', userId);
+  if (error) throw new Error(error.message);
+  const todayStr = localDateString(new Date());
+  const rows = data ?? [];
+  const completedToday = rows
+    .filter((row) => localDateString(new Date(row.completed_at)) === todayStr)
+    .sort((a, b) => b.day_number - a.day_number)[0];
+  return {
+    days: new Set(rows.map((row) => row.day_number)),
+    completedTodayDay: completedToday?.day_number ?? null,
+  };
+}
+
 export async function fetchBeginnerTrackProgress(userId: string) {
   const { data, error } = await supabase
     .from('beginner_track_progress')

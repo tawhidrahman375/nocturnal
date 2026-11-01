@@ -13,6 +13,7 @@ import {
   Trophy,
   Waves,
 } from 'lucide-react-native';
+import { useMemo } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AccordionItem } from '../../components/AccordionItem';
 import { AnimatedPressable } from '../../components/AnimatedPressable';
@@ -20,12 +21,14 @@ import { Arrive } from '../../components/Arrive';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { EmptyState } from '../../components/EmptyState';
+import { LoadingView } from '../../components/LoadingView';
 import { NightSky } from '../../components/NightSky';
 import { ProgressRing } from '../../components/ProgressRing';
 import { ProUpsell } from '../../components/ProUpsell';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { SkeletonLines } from '../../components/SkeletonLines';
 import { StatPill } from '../../components/StatPill';
+import { computeMonthlyRecap } from '../../lib/recap';
 import { MIN_DREAMS_FOR_INSIGHT, useDreamInsight } from '../../hooks/useDreamInsight';
 import { useDreams } from '../../hooks/useDreams';
 import { useProfile } from '../../hooks/useProfile';
@@ -244,6 +247,7 @@ export function InsightsScreen() {
   const lucidDreams = dreams.filter((dream) => dream.is_lucid).length;
   const lucidRate = totalDreams > 0 ? Math.round((lucidDreams / totalDreams) * 100) : 0;
   const currentStreak = profile?.current_streak ?? 0;
+  const recap = useMemo(() => computeMonthlyRecap(dreams, profile?.longest_streak ?? 0), [dreams, profile?.longest_streak]);
   const longestStreak = profile?.longest_streak ?? 0;
 
   return (
@@ -253,7 +257,9 @@ export function InsightsScreen() {
           <Text style={[typography.heroTitle, styles.title]}>Insights</Text>
         </View>
 
-        {totalDreams === 0 ? (
+        {dreamsLoading && totalDreams === 0 ? (
+          <LoadingView label="Reading your journal" />
+        ) : totalDreams === 0 ? (
           // Scrollable, unlike before: the technique recommendation is a full paragraph and
           // the two narrative cards follow it, so together they no longer fit above the
           // tab bar on a phone.
@@ -264,7 +270,7 @@ export function InsightsScreen() {
             <EmptyState
               icon={Waves}
               title="Nothing to trace yet."
-              message="A pattern needs more than one night. Keep logging, and it will surface."
+              message={`Log ${MIN_DREAMS_FOR_INSIGHT} dreams and Cleo starts finding the patterns that keep showing up.`}
               tint={colors.text.secondary}
               action={{ label: 'Log a dream', onPress: () => navigation.navigate('Journal') }}
             />
@@ -298,6 +304,29 @@ export function InsightsScreen() {
               <StatPill icon={Flame} value={currentStreak} label="Day streak" tint={colors.accent.primary} />
               <StatPill icon={Trophy} value={longestStreak} label="Best streak" tint={colors.text.secondary} />
               <StatPill icon={Moon} value={totalDreams} label="Logged" tint={colors.text.secondary} />
+            </Arrive>
+
+            <Arrive delay={75}>
+              <AnimatedPressable
+                onPress={() => navigation.getParent()?.navigate('Recap')}
+                accessibilityRole="button"
+                accessibilityLabel="Open your month in dreams"
+              >
+                <Card style={styles.monthCard}>
+                  <CalendarRange color={colors.accent.primary} size={20} strokeWidth={1.5} />
+                  <View style={styles.coachCopy}>
+                    <Text style={[typography.bodyMedium, styles.heroValue]}>
+                      {recap.lucid} lucid {recap.lucid === 1 ? 'dream' : 'dreams'} this month
+                    </Text>
+                    <Text style={[typography.label, styles.coachSubtitle]}>
+                      {recap.previousLucid > 0 || recap.lucid > 0
+                        ? `${recap.previousLucid} the month before. See your recap.`
+                        : 'Your month in dreams, ready to share.'}
+                    </Text>
+                  </View>
+                  <ChevronRight color={colors.text.tertiary} size={20} strokeWidth={1.5} />
+                </Card>
+              </AnimatedPressable>
             </Arrive>
 
             <Arrive delay={90} style={styles.accordionStack}>
@@ -388,6 +417,11 @@ const styles = StyleSheet.create({
   accordionStack: {
     gap: spacing.sm + spacing.xs,
     marginTop: spacing.lg - spacing.md,
+  },
+  monthCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
   },
   sleepAction: {
     marginTop: spacing.xs,

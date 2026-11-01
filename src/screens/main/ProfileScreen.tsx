@@ -2,6 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import {
   AlarmClock,
   Bell,
+  CalendarRange,
   ChevronRight,
   Crown,
   Download,
@@ -11,18 +12,21 @@ import {
   LogOut,
   LucideIcon,
   Moon,
+  Pause,
   Plus,
   RotateCcw,
   Shield,
   Trash,
 } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { Arrive } from '../../components/Arrive';
 import { Avatar } from '../../components/Avatar';
 import { Card } from '../../components/Card';
 import { DeleteAccountModal } from '../../components/DeleteAccountModal';
+import { DreamIdentityCard } from '../../components/DreamIdentityCard';
+import { PauseModal } from '../../components/PauseModal';
 import { NightSky } from '../../components/NightSky';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { SkeletonLines } from '../../components/SkeletonLines';
@@ -30,6 +34,7 @@ import { StatPill } from '../../components/StatPill';
 import { useAuth } from '../../hooks/useAuth';
 import { useDreamProfile } from '../../hooks/useDreamProfile';
 import { useDreams } from '../../hooks/useDreams';
+import { usePause } from '../../hooks/usePause';
 import { useNotificationSettings } from '../../hooks/useNotificationSettings';
 import { useProfile } from '../../hooks/useProfile';
 import { useRealityCheckSettings } from '../../hooks/useRealityCheckSettings';
@@ -38,6 +43,7 @@ import { useWbtbDefaults } from '../../hooks/useWbtbDefaults';
 import { pickAvatarImage, uploadAvatar } from '../../lib/avatar';
 import { track } from '../../lib/analytics';
 import { exportAndDeliverData } from '../../lib/dataExport';
+import { computeDreamIdentity } from '../../lib/dreamIdentity';
 import { purchasesSupported } from '../../lib/purchases';
 import {
   DEFAULT_WAKE_WINDOW_MINUTES,
@@ -118,6 +124,32 @@ export function ProfileScreen() {
   const { isPro, isLoading: subscriptionLoading, openCustomerCenter, restore } = useSubscription();
 
   const lucidDreams = dreams.filter((dream) => dream.is_lucid).length;
+  const identity = useMemo(
+    () => computeDreamIdentity(dreams, profile?.longest_streak ?? 0),
+    [dreams, profile?.longest_streak]
+  );
+
+  const { active: activePauseRange, pause, resume } = usePause();
+  const [pauseOpen, setPauseOpen] = useState(false);
+  const [pauseBusy, setPauseBusy] = useState(false);
+  const pauseUntil = activePauseRange
+    ? (() => {
+        const [year, month, day] = activePauseRange.end.split('-').map(Number);
+        return new Date(year, month - 1, day).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' });
+      })()
+    : null;
+  const handlePause = async (days: number) => {
+    setPauseBusy(true);
+    await pause(days);
+    setPauseBusy(false);
+    setPauseOpen(false);
+  };
+  const handleResume = async () => {
+    setPauseBusy(true);
+    await resume();
+    setPauseBusy(false);
+    setPauseOpen(false);
+  };
 
   const subscriptionCaption = !purchasesSupported
     ? 'iOS & Android only'
@@ -245,6 +277,10 @@ export function ProfileScreen() {
               </Card>
             </Arrive>
 
+            <Arrive delay={60}>
+              <DreamIdentityCard identity={identity} />
+            </Arrive>
+
             <Arrive delay={80} style={styles.statsRow}>
               <StatPill icon={Moon} value={dreams.length} label="Dreams logged" tint={colors.text.secondary} />
               <StatPill icon={Flame} value={profile?.current_streak ?? 0} label="Day streak" tint={colors.accent.primary} />
@@ -280,6 +316,24 @@ export function ProfileScreen() {
                   <ChevronRight color={colors.text.tertiary} size={20} strokeWidth={1.5} />
                 </Card>
               </AnimatedPressable>
+            </Arrive>
+
+            <Arrive delay={140}>
+              <SettingsRow
+                icon={CalendarRange}
+                label="Your month in dreams"
+                caption="Recap and share"
+                onPress={() => navigation.navigate('Recap')}
+              />
+            </Arrive>
+
+            <Arrive delay={150}>
+              <SettingsRow
+                icon={Pause}
+                label="Take a break"
+                caption={pauseUntil ? `Paused until ${pauseUntil}` : 'Pause reminders, keep your streak'}
+                onPress={() => setPauseOpen(true)}
+              />
             </Arrive>
 
             <Arrive delay={160}>
@@ -359,6 +413,15 @@ export function ProfileScreen() {
           </View>
         </NightSky>
       </ScrollView>
+
+      <PauseModal
+        visible={pauseOpen}
+        activeUntil={pauseUntil}
+        busy={pauseBusy}
+        onPause={handlePause}
+        onResume={handleResume}
+        onClose={() => setPauseOpen(false)}
+      />
 
       <DeleteAccountModal
         step={deleteStep}

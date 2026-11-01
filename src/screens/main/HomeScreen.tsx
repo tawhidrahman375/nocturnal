@@ -1,11 +1,16 @@
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
 import { Flame, LucideIcon, Moon, PenLine, Sparkles } from 'lucide-react-native';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Arrive } from '../../components/Arrive';
 import { BeginnerTrackCard } from '../../components/BeginnerTrackCard';
 import { Card } from '../../components/Card';
+import { LucidityCard } from '../../components/LucidityCard';
+import { RecallStrengthCard } from '../../components/RecallStrengthCard';
+import { SkeletonLines } from '../../components/SkeletonLines';
+import { StreakStatusCard } from '../../components/StreakStatusCard';
+import { TonightFocusCard } from '../../components/TonightFocusCard';
 import { MilestoneOverlay } from '../../components/MilestoneOverlay';
 import { NightSky } from '../../components/NightSky';
 import { ScreenContainer } from '../../components/ScreenContainer';
@@ -17,15 +22,23 @@ import { useDreamInsight } from '../../hooks/useDreamInsight';
 import { useSubscription } from '../../hooks/useSubscription';
 import { useBeginnerTrack } from '../../hooks/useBeginnerTrack';
 import { useDreams } from '../../hooks/useDreams';
+import { useLucidityProgress } from '../../hooks/useLucidityProgress';
 import { useMilestoneCheck } from '../../hooks/useMilestoneCheck';
+import { usePause } from '../../hooks/usePause';
 import { useProfile } from '../../hooks/useProfile';
+import { topDreamSigns } from '../../lib/dailyFocus';
+import { pausedDaySet } from '../../lib/pause';
+import { computeRecallStrength } from '../../lib/recallStrength';
+import { describeStreak } from '../../lib/streakStatus';
 import { MainTabParamList } from '../../navigation/types';
 import { colors, radius, spacing, typography } from '../../theme';
 
 export function HomeScreen() {
   const { user } = useAuth();
   const { profile } = useProfile();
-  const { dreams } = useDreams();
+  const { dreams, isLoading: dreamsLoading } = useDreams();
+  const { ranges: pauseRanges, resume } = usePause();
+  const lucidity = useLucidityProgress(dreams, dreamsLoading);
   const track = useBeginnerTrack();
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
   // Also owns milestone 3 (first AI insight): useDreamInsight below silently
@@ -40,6 +53,29 @@ export function HomeScreen() {
   const recentDreams = dreams.slice(0, 3);
   const lucidDreams = dreams.filter((dream) => dream.is_lucid).length;
   const currentStreak = profile?.current_streak;
+
+  // All three are derived from the journal and the clock, so they move on their own as days
+  // pass, not only when something is written.
+  const dreamSigns = useMemo(() => topDreamSigns(dreams), [dreams]);
+  const streakStatus = useMemo(
+    () =>
+      profile
+        ? describeStreak({
+            dreamedDates: dreams.map((dream) => dream.dreamed_at),
+            accountCreatedAt: new Date(profile.created_at),
+            pauseRanges,
+          })
+        : null,
+    [dreams, profile, pauseRanges]
+  );
+  const recall = useMemo(
+    () =>
+      computeRecallStrength(
+        dreams.map((dream) => dream.dreamed_at),
+        pausedDaySet(pauseRanges)
+      ),
+    [dreams, pauseRanges]
+  );
 
   useEffect(() => {
     if (user && currentStreak) checkStreakMilestone(user.id, currentStreak);
@@ -111,6 +147,28 @@ export function HomeScreen() {
               <BareStat icon={Sparkles} value={lucidDreams} label="Lucid" tint={colors.text.secondary} />
             </Arrive>
 
+            <Arrive delay={140}>
+              <TonightFocusCard dreamSigns={dreamSigns} />
+            </Arrive>
+
+            {streakStatus && !dreamsLoading ? (
+              <Arrive delay={150}>
+                <StreakStatusCard status={streakStatus} onResume={resume} />
+              </Arrive>
+            ) : null}
+
+            {recall ? (
+              <Arrive delay={155}>
+                <RecallStrengthCard strength={recall} />
+              </Arrive>
+            ) : null}
+
+            {lucidity.progress ? (
+              <Arrive delay={158}>
+                <LucidityCard progress={lucidity.progress} />
+              </Arrive>
+            ) : null}
+
             <Arrive delay={160}>
               <TonightRoutineCard dreams={dreams} mildIntentionSetAt={profile?.mild_intention_set_at ?? null} />
             </Arrive>
@@ -121,7 +179,11 @@ export function HomeScreen() {
 
             <Arrive delay={200} style={styles.section}>
               <Text style={[typography.heading, styles.sectionTitle]}>Recent dreams</Text>
-              {recentDreams.length === 0 ? (
+              {dreamsLoading && dreams.length === 0 ? (
+                <Card>
+                  <SkeletonLines lines={2} accessibilityLabel="Loading your recent dreams" />
+                </Card>
+              ) : recentDreams.length === 0 ? (
                 <Card>
                   <View style={styles.emptyRow}>
                     <PenLine color={colors.text.tertiary} size={18} strokeWidth={1.5} />

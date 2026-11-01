@@ -9,10 +9,11 @@ import { trackScreen } from '../lib/analytics';
 import { markPaywallPending } from '../lib/paywall';
 import { useAuth } from '../hooks/useAuth';
 import { useMildPromptNotificationRouting } from '../hooks/useMildPromptNotificationRouting';
-import { useMildPromptScheduling } from '../hooks/useMildPromptScheduling';
 import { useOnboardingGate } from '../hooks/useOnboardingGate';
 import { usePaywallGate } from '../hooks/usePaywallGate';
 import { usePurchasesIdentity } from '../hooks/usePurchasesIdentity';
+import { useRoutineNotificationRouting } from '../hooks/useRoutineNotificationRouting';
+import { useRoutineScheduling } from '../hooks/useRoutineScheduling';
 import { useQuickRecordNotificationRouting } from '../hooks/useQuickRecordNotificationRouting';
 import { useRealityCheckNotificationRouting } from '../hooks/useRealityCheckNotificationRouting';
 import { useWbtbNotificationRouting } from '../hooks/useWbtbNotificationRouting';
@@ -54,7 +55,8 @@ export function RootNavigator() {
   // The recording screen lives in the signed-in app stack, so only route to it once that
   // stack (and not the onboarding quiz) is what is on screen.
   useQuickRecordNotificationRouting(!!session && isNavReady && needsOnboarding === false && showPaywall === false);
-  useMildPromptScheduling(!!session);
+  useRoutineScheduling(!!session);
+  useRoutineNotificationRouting(!!session && isNavReady && needsOnboarding === false && showPaywall === false);
   usePurchasesIdentity(session);
 
   // The paywall is flagged pending before the gate flips, so the very next render already

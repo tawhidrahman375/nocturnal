@@ -7,6 +7,7 @@ import { LegalDocumentScreen } from '../screens/legal/LegalDocumentScreen';
 import { MildPromptScreen } from '../screens/mild-prompt/MildPromptScreen';
 import { NotificationSettingsScreen } from '../screens/notifications/NotificationSettingsScreen';
 import { PaywallScreen } from '../screens/paywall/PaywallScreen';
+import { RecapScreen } from '../screens/recap/RecapScreen';
 import { RecordDreamScreen } from '../screens/record/RecordDreamScreen';
 import { RealityCheckSetupScreen } from '../screens/reality-check/RealityCheckSetupScreen';
 import { TechniqueDetailScreen } from '../screens/techniques/TechniqueDetailScreen';
@@ -47,6 +48,7 @@ export function AppNavigator({ startWithPaywall = false }: { startWithPaywall?: 
         options={{ presentation: 'fullScreenModal', gestureEnabled: false, animation: 'fade' }}
       />
       <Stack.Screen name="BeginnerTrack" component={BeginnerTrackScreen} />
+      <Stack.Screen name="Recap" component={RecapScreen} />
       <Stack.Screen name="MildPrompt" component={MildPromptScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="CoachChat" component={CoachChatScreen} />
       <Stack.Screen
