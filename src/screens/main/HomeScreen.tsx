@@ -12,7 +12,9 @@ import { ScreenContainer } from '../../components/ScreenContainer';
 import { TonightRoutineCard } from '../../components/TonightRoutineCard';
 import { WbtbCard } from '../../components/WbtbCard';
 import { useAuth } from '../../hooks/useAuth';
+import { TechniqueLibraryCard } from '../../components/TechniqueLibraryCard';
 import { useDreamInsight } from '../../hooks/useDreamInsight';
+import { useSubscription } from '../../hooks/useSubscription';
 import { useBeginnerTrack } from '../../hooks/useBeginnerTrack';
 import { useDreams } from '../../hooks/useDreams';
 import { useMilestoneCheck } from '../../hooks/useMilestoneCheck';
@@ -43,7 +45,9 @@ export function HomeScreen() {
     if (user && currentStreak) checkStreakMilestone(user.id, currentStreak);
   }, [user, currentStreak, checkStreakMilestone]);
 
-  const { isFirst: isFirstInsight } = useDreamInsight(dreams.length);
+  // AI insights are Pro, so a free user's Home visit must not generate one in the background.
+  const { isPro } = useSubscription();
+  const { isFirst: isFirstInsight } = useDreamInsight(dreams.length, isPro);
 
   useEffect(() => {
     if (isFirstInsight) triggerFirstInsightMilestone();
@@ -109,6 +113,10 @@ export function HomeScreen() {
 
             <Arrive delay={160}>
               <TonightRoutineCard dreams={dreams} mildIntentionSetAt={profile?.mild_intention_set_at ?? null} />
+            </Arrive>
+
+            <Arrive delay={180}>
+              <TechniqueLibraryCard />
             </Arrive>
 
             <Arrive delay={200} style={styles.section}>

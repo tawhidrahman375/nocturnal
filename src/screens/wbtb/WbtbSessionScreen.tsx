@@ -1,11 +1,12 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { CloudOff } from 'lucide-react-native';
-import { useEffect, useRef, useState } from 'react';
+import { PropsWithChildren, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button } from '../../components/Button';
 import { CrossFade } from '../../components/CrossFade';
 import { EmptyState } from '../../components/EmptyState';
 import { LoadingView } from '../../components/LoadingView';
+import { NightSky } from '../../components/NightSky';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { useAuth } from '../../hooks/useAuth';
 import { track } from '../../lib/analytics';
@@ -44,6 +45,19 @@ const TECHNIQUE_STAGES: Record<WbtbTechnique, typeof MildStage> = {
   wild: WildStage,
   ssild: SsildStage,
 };
+
+// The night sky behind every stage, so moving from the alarm to recall to the technique never
+// swaps backgrounds. edgeToEdge keeps ScreenContainer's own side padding from leaving dark bars
+// down both sides of the sky, so the content pads itself.
+function SessionFrame({ children }: PropsWithChildren) {
+  return (
+    <ScreenContainer edgeToEdge>
+      <NightSky intensity="full" style={styles.sky}>
+        <View style={styles.frame}>{children}</View>
+      </NightSky>
+    </ScreenContainer>
+  );
+}
 
 export function WbtbSessionScreen({ route, navigation }: Props) {
   const { sessionId } = route.params;
@@ -87,7 +101,7 @@ export function WbtbSessionScreen({ route, navigation }: Props) {
 
   if (loadError) {
     return (
-      <ScreenContainer>
+      <SessionFrame>
         <View style={styles.center}>
           <EmptyState
             icon={CloudOff}
@@ -96,15 +110,15 @@ export function WbtbSessionScreen({ route, navigation }: Props) {
           />
         </View>
         <Button label="Back to home" variant="secondary" onPress={close} style={styles.bottomAction} />
-      </ScreenContainer>
+      </SessionFrame>
     );
   }
 
   if (!session || !stage) {
     return (
-      <ScreenContainer>
+      <SessionFrame>
         <LoadingView label="Preparing your session" />
-      </ScreenContainer>
+      </SessionFrame>
     );
   }
 
@@ -163,7 +177,7 @@ export function WbtbSessionScreen({ route, navigation }: Props) {
   };
 
   return (
-    <ScreenContainer>
+    <SessionFrame>
       {stage !== 'closed' ? <SessionHeader {...STAGE_HEADERS[stage]} onClose={close} /> : null}
 
       <CrossFade contentKey={stage} slidePx={STAGE_SLIDE_PX} style={styles.stage}>
@@ -171,11 +185,18 @@ export function WbtbSessionScreen({ route, navigation }: Props) {
       </CrossFade>
 
       {syncError ? <Text style={[typography.caption, styles.syncError]}>{syncError}</Text> : null}
-    </ScreenContainer>
+    </SessionFrame>
   );
 }
 
 const styles = StyleSheet.create({
+  sky: {
+    flex: 1,
+  },
+  frame: {
+    flex: 1,
+    paddingHorizontal: spacing.screenPadding,
+  },
   center: {
     flex: 1,
     justifyContent: 'center',

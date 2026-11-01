@@ -2,7 +2,7 @@ import { BottomTabBarProps, createBottomTabNavigator } from '@react-navigation/b
 import { NavigationHelpers, ParamListBase, TabNavigationState } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import { Compass, House, User, Waves } from 'lucide-react-native';
-import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, LayoutChangeEvent, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainTabParamList } from './types';
@@ -51,9 +51,13 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 
   // One shared bubble that slides/resizes to the active tab instead of each tab
   // owning its own static highlight.
+  // The pill is always laid out at the active tab's width and only transforms animate, so
+  // every pill value stays native-driven: translateX slides it and scaleX stretches it from
+  // the previous tab's width back to 1.
   const [pillX] = useState(() => new Animated.Value(0));
-  const [pillWidth] = useState(() => new Animated.Value(0));
+  const [pillScale] = useState(() => new Animated.Value(1));
   const [pillOpacity] = useState(() => new Animated.Value(0));
+  const lastPill = useRef<{ center: number; width: number } | null>(null);
 
   const activeItem = itemLayouts[state.index];
   const contentWidth = contentWidths[state.index];
@@ -64,23 +68,29 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     // onLayout box, now sized to match contentWidth exactly when focused — see
     // INACTIVE_ITEM_WIDTH / TabBarItem's width below), so no extra offset is needed.
     const targetX = activeItem.x + (activeItem.width - contentWidth) / 2;
+    const prev = lastPill.current;
+    // The pill's laid-out width just changed to contentWidth, so restart from where the
+    // previous tab's pill was, scaled to its old width.
+    pillX.setValue((prev ? prev.center : targetX + contentWidth / 2) - contentWidth / 2);
+    pillScale.setValue(prev ? prev.width / contentWidth : 1);
+    lastPill.current = { center: targetX + contentWidth / 2, width: contentWidth };
     Animated.spring(pillX, {
       toValue: targetX,
       useNativeDriver: true,
       friction: 9,
       tension: 80,
     }).start();
-    Animated.timing(pillWidth, {
-      toValue: contentWidth,
+    Animated.timing(pillScale, {
+      toValue: 1,
       duration: 260,
-      useNativeDriver: false,
+      useNativeDriver: true,
     }).start();
     Animated.timing(pillOpacity, {
       toValue: 1,
       duration: 160,
       useNativeDriver: true,
     }).start();
-  }, [activeItem, contentWidth, pillX, pillWidth, pillOpacity]);
+  }, [activeItem, contentWidth, pillX, pillScale, pillOpacity]);
 
   const handleItemLayout = (index: number) => (event: LayoutChangeEvent) => {
     const { x, width } = event.nativeEvent.layout;
@@ -117,8 +127,8 @@ function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               styles.activePill,
               {
                 opacity: pillOpacity,
-                width: pillWidth,
-                transform: [{ translateX: pillX }],
+                width: contentWidth ?? 0,
+                transform: [{ translateX: pillX }, { scaleX: pillScale }],
               },
             ]}
           />
@@ -186,7 +196,7 @@ function TabBarItem({
   useEffect(() => {
     Animated.spring(reveal, {
       toValue: isFocused ? 1 : 0,
-      useNativeDriver: false,
+      useNativeDriver: true,
       friction: 8,
       tension: 100,
     }).start();
@@ -211,25 +221,48 @@ function TabBarItem({
       hitSlop={8}
       onLayout={onLayout}
     >
-      <View style={styles.tabPill}>
+      {/* The pill is laid out icon-only in both states, so nothing here animates layout:
+          the whole thing slides left to make room as the label fades in beside the icon,
+          which keeps every value native-driven. */}
+      <Animated.View
+        style={[
+          styles.tabPill,
+          {
+            transform: [
+              {
+                translateX: reveal.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, contentWidth === undefined ? 0 : -(contentWidth - INACTIVE_ITEM_WIDTH) / 2],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
         <Icon
           color={isFocused ? colors.accent.primary : colors.text.secondary}
           size={ICON_SIZE}
           strokeWidth={1.75}
         />
         <Animated.View
-          style={{
-            overflow: 'hidden',
-            marginLeft: reveal.interpolate({ inputRange: [0, 1], outputRange: [0, LABEL_GAP] }),
-            width: reveal.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, labelWidth === undefined ? 0 : labelWidth + LABEL_WIDTH_BUFFER],
-            }),
-            opacity: reveal,
-            transform: [
-              { scale: reveal.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) },
-            ],
-          }}
+          pointerEvents="none"
+          style={[
+            styles.tabLabelReveal,
+            {
+              width: labelWidth === undefined ? undefined : labelWidth + LABEL_WIDTH_BUFFER,
+              opacity: reveal,
+              transform: [
+                // Scales about its centre, so shift it back to keep the left edge at the icon.
+                {
+                  translateX: reveal.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [labelWidth === undefined ? 0 : -labelWidth * 0.15, 0],
+                  }),
+                },
+                { scale: reveal.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) },
+              ],
+            },
+          ]}
         >
           <Text style={[typography.label, styles.tabLabel]} numberOfLines={1}>
             {label}
@@ -244,7 +277,7 @@ function TabBarItem({
         >
           {label}
         </Text>
-      </View>
+      </Animated.View>
       {/* Invisible, fully-revealed clone of the pill above — its rendered width is what
           the shared bubble in the parent is sized to, so the icon/label padding inside
           the bubble matches this pill's own exactly instead of a predicted number. */}
@@ -418,6 +451,14 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     color: colors.accent.primary,
+  },
+  // Sits right of the icon inside tabPill without taking part in its layout.
+  tabLabelReveal: {
+    position: 'absolute',
+    left: PILL_PAD_H + ICON_SIZE + LABEL_GAP,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
   },
   labelMeasure: {
     position: 'absolute',

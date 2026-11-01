@@ -1,12 +1,10 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { X } from 'lucide-react-native';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { AnimatedPressable } from '../../components/AnimatedPressable';
+import { StyleSheet, Text, View } from 'react-native';
 import { Arrive } from '../../components/Arrive';
 import { Button } from '../../components/Button';
 import { ChipGroup } from '../../components/ChipGroup';
-import { ScreenContainer } from '../../components/ScreenContainer';
+import { NightSetupLayout } from '../../components/NightSetupLayout';
 import { useWbtbDefaults } from '../../hooks/useWbtbDefaults';
 import {
   DEFAULT_WAKE_WINDOW_MINUTES,
@@ -57,98 +55,65 @@ export function WbtbDefaultsScreen({ navigation }: Props) {
   };
 
   return (
-    <ScreenContainer>
-      <View style={styles.header}>
-        <View style={styles.headerText}>
-          <Text style={[typography.label, styles.eyebrow]}>Wake Back To Bed</Text>
-          <Text style={[typography.displayMd, styles.title]}>Defaults</Text>
-        </View>
-        <AnimatedPressable
-          onPress={() => navigation.goBack()}
-          hitSlop={12}
-          accessibilityRole="button"
-          accessibilityLabel="Close"
-        >
-          <X color={colors.text.secondary} size={24} strokeWidth={1.5} />
-        </AnimatedPressable>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Arrive>
-          <View style={styles.section}>
-            <Text style={[typography.label, styles.sectionLabel]}>Sleep before waking</Text>
-            <ChipGroup
-              options={SLEEP_DURATION_OPTIONS}
-              value={sleepMinutes}
-              onChange={setSleepMinutes}
-              format={formatDuration}
-            />
-            <Text style={[typography.label, styles.caption]}>
-              {formatDuration(RECOMMENDED_SLEEP_MINUTES)} is recommended. It lands late in your fourth
-              sleep cycle, when REM periods run longest and dreams are easiest to recall.
-            </Text>
-          </View>
-        </Arrive>
-
-        <Arrive delay={50}>
-          <View style={styles.section}>
-            <Text style={[typography.label, styles.sectionLabel]}>Wake window</Text>
-            <ChipGroup
-              options={WAKE_WINDOW_OPTIONS}
-              value={wakeWindowMinutes}
-              onChange={setWakeWindowMinutes}
-              format={(m) => `${m} min`}
-            />
-            <Text style={[typography.label, styles.caption]}>
-              Long enough to wake your mind, short enough to slip back into REM.
-            </Text>
-          </View>
-        </Arrive>
-
-        <Arrive delay={90}>
-          <Text style={[typography.label, styles.caption]}>
-            These are just your starting point — every time you plan a WBTB session you can still
-            change them for that night only.
+    <NightSetupLayout
+      eyebrow="Wake Back To Bed"
+      title="Defaults"
+      onClose={() => navigation.goBack()}
+      footer={
+        <>
+          {error ? (
+            <Arrive from="down">
+              <Text style={[typography.label, styles.errorText]}>{error}</Text>
+            </Arrive>
+          ) : null}
+          <Button label="Save defaults" onPress={handleSave} loading={saving} style={styles.primaryAction} />
+        </>
+      }
+    >
+      <Arrive>
+        <View style={styles.section}>
+          <Text style={[typography.overline, styles.sectionLabel]}>Sleep before waking</Text>
+          <ChipGroup
+            variant="solid"
+            options={SLEEP_DURATION_OPTIONS}
+            value={sleepMinutes}
+            onChange={setSleepMinutes}
+            format={formatDuration}
+          />
+          <Text style={[typography.footnote, styles.caption]}>
+            {formatDuration(RECOMMENDED_SLEEP_MINUTES)} is recommended. It lands late in your fourth
+            sleep cycle, when REM periods run longest and dreams are easiest to recall.
           </Text>
-        </Arrive>
-      </ScrollView>
+        </View>
+      </Arrive>
 
-      <View style={styles.footer}>
-        {error ? (
-          <Arrive from="down">
-            <Text style={[typography.label, styles.errorText]}>{error}</Text>
-          </Arrive>
-        ) : null}
-        <Button label="Save defaults" onPress={handleSave} loading={saving} />
-      </View>
-    </ScreenContainer>
+      <Arrive delay={50}>
+        <View style={styles.section}>
+          <Text style={[typography.overline, styles.sectionLabel]}>Wake window</Text>
+          <ChipGroup
+            variant="solid"
+            options={WAKE_WINDOW_OPTIONS}
+            value={wakeWindowMinutes}
+            onChange={setWakeWindowMinutes}
+            format={(m) => `${m} min`}
+          />
+          <Text style={[typography.footnote, styles.caption]}>
+            Long enough to wake your mind, short enough to slip back into REM.
+          </Text>
+        </View>
+      </Arrive>
+
+      <Arrive delay={90}>
+        <Text style={[typography.footnote, styles.caption]}>
+          These are just your starting point. Every time you plan a WBTB session you can still
+          change them for that night only.
+        </Text>
+      </Arrive>
+    </NightSetupLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  headerText: {
-    gap: spacing.xs / 2,
-  },
-  eyebrow: {
-    color: colors.text.tertiary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  title: {
-    color: colors.text.primary,
-  },
-  scroll: {
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.lg,
-    gap: spacing.xl,
-  },
   section: {
     gap: spacing.sm,
   },
@@ -158,10 +123,9 @@ const styles = StyleSheet.create({
   caption: {
     color: colors.text.tertiary,
   },
-  footer: {
-    gap: spacing.sm,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
+  // Full width inside the footer's 24px side padding; buttons otherwise hug their label.
+  primaryAction: {
+    alignSelf: 'stretch',
   },
   errorText: {
     color: '#F87171',

@@ -17,7 +17,8 @@ const INITIAL_STATE: TechniqueRecommendationState = {
 // technique recommendation. Falls back to the static no-history line (lib/
 // techniqueRecommendation.ts) on any error or when the user has no WBTB session
 // history yet, so the card always has something to show.
-export function useTechniqueRecommendation() {
+// `enabled` is false for free users: nothing is requested, so no Edge Function call is made.
+export function useTechniqueRecommendation(enabled = true) {
   const [state, setState] = useState<TechniqueRecommendationState>(INITIAL_STATE);
   const requestedRef = useRef(false);
 
@@ -36,10 +37,10 @@ export function useTechniqueRecommendation() {
   }, []);
 
   useEffect(() => {
-    if (requestedRef.current) return;
+    if (!enabled || requestedRef.current) return;
     requestedRef.current = true;
     load();
-  }, [load]);
+  }, [enabled, load]);
 
   return { ...state, reload: load };
 }

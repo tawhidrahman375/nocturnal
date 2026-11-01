@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { ANTHROPIC_API_VERSION, CLAUDE_MODEL, NO_EM_DASH_RULE } from "../_shared/ai-config.ts";
+import { ANTHROPIC_API_VERSION, SONNET_MODEL, NO_EM_DASH_RULE } from "../_shared/ai-config.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -84,9 +84,8 @@ async function callClaude(prompt: string): Promise<string> {
       "anthropic-version": ANTHROPIC_API_VERSION,
     },
     body: JSON.stringify({
-      model: CLAUDE_MODEL,
+      model: SONNET_MODEL,
       max_tokens: 120,
-      temperature: 0.5,
       system:
         `You write short, warm bedtime intention mantras for a lucid dreaming journal app. You only reference patterns actually present in the data you're given, you never fabricate dream content, and you never write more than two short sentences. ${NO_EM_DASH_RULE}`,
       messages: [{ role: "user", content: prompt }],

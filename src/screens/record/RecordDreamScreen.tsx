@@ -19,7 +19,7 @@ import { track } from '../../lib/analytics';
 import { MAX_RECORDING_SECONDS, notifyRecordingsChanged, savePendingRecording } from '../../lib/dreamRecordings';
 import { EASE_AMBIENT } from '../../lib/motion';
 import { AppStackParamList } from '../../navigation/types';
-import { colors, spacing, typography } from '../../theme';
+import { colors, fontFamily, spacing, typography } from '../../theme';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'RecordDream'>;
 type Phase = 'idle' | 'recording' | 'saving';
@@ -29,6 +29,10 @@ const MIC_SIZE = 144;
 const SAVING_MIN_MS = 600;
 // One gentle breath per second: 1.0 down to 0.95 and back, half a second each way.
 const PULSE_HALF_CYCLE_MS = 500;
+// The faint ring that scales out from the mic and fades while recording: one loop every 2s.
+const RING_CYCLE_MS = 2000;
+const RING_SCALE_TO = 1.6;
+const RING_START_OPACITY = 0.5;
 
 const formatTimer = (totalSeconds: number) => {
   const minutes = Math.floor(totalSeconds / 60);
@@ -47,6 +51,7 @@ export function RecordDreamScreen({ navigation }: Props) {
   const [micDenied, setMicDenied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pulse] = useState(() => new Animated.Value(1));
+  const [ring] = useState(() => new Animated.Value(0));
 
   // Refs so the timer, the auto-stop and the back handler always see the current phase.
   const phaseRef = useRef<Phase>('idle');
@@ -120,6 +125,17 @@ export function RecordDreamScreen({ navigation }: Props) {
     return () => animation.stop();
   }, [phase, reducedMotion, pulse]);
 
+  // The ring only shows while recording, and not at all under reduced motion.
+  useEffect(() => {
+    ring.setValue(0);
+    if (phase !== 'recording' || reducedMotion) return;
+    const animation = Animated.loop(
+      Animated.timing(ring, { toValue: 1, duration: RING_CYCLE_MS, easing: EASE_AMBIENT, useNativeDriver: true })
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [phase, reducedMotion, ring]);
+
   const start = async () => {
     setError(null);
     try {
@@ -170,17 +186,31 @@ export function RecordDreamScreen({ navigation }: Props) {
         <Arrive style={styles.center}>
           <Text style={[typography.displayMd, styles.prompt]}>What happened in your dream?</Text>
 
-          <Animated.View style={{ transform: [{ scale: pulse }] }}>
-            <AnimatedPressable
-              onPress={handleMicPress}
-              disabled={isSaving}
-              style={styles.mic}
-              accessibilityRole="button"
-              accessibilityLabel={phase === 'recording' ? 'Stop recording' : 'Start recording'}
-            >
-              <MicIcon color={colors.text.onAccent} size={56} strokeWidth={1.5} />
-            </AnimatedPressable>
-          </Animated.View>
+          <View style={styles.micWrap}>
+            {phase === 'recording' && !reducedMotion ? (
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.ring,
+                  {
+                    opacity: ring.interpolate({ inputRange: [0, 1], outputRange: [RING_START_OPACITY, 0] }),
+                    transform: [{ scale: ring.interpolate({ inputRange: [0, 1], outputRange: [1, RING_SCALE_TO] }) }],
+                  },
+                ]}
+              />
+            ) : null}
+            <Animated.View style={{ transform: [{ scale: pulse }] }}>
+              <AnimatedPressable
+                onPress={handleMicPress}
+                disabled={isSaving}
+                style={styles.mic}
+                accessibilityRole="button"
+                accessibilityLabel={phase === 'recording' ? 'Stop recording' : 'Start recording'}
+              >
+                <MicIcon color={colors.accent.primary} size={phase === 'recording' ? 48 : 64} strokeWidth={1.5} />
+              </AnimatedPressable>
+            </Animated.View>
+          </View>
 
           <View style={styles.status}>
             {isSaving ? (
@@ -194,7 +224,7 @@ export function RecordDreamScreen({ navigation }: Props) {
                     <Button label="Open Settings" onPress={() => Linking.openSettings()} style={styles.settingsButton} />
                   </>
                 ) : (
-                  <Text style={[typography.label, styles.hint]}>
+                  <Text style={[typography.label, styles.hint, styles.hintRegular]}>
                     {phase === 'recording' ? 'Tap to stop' : 'Tap to record, up to 5 minutes'}
                   </Text>
                 )}
@@ -230,11 +260,25 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     textAlign: 'center',
   },
+  micWrap: {
+    width: MIC_SIZE,
+    height: MIC_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ring: {
+    position: 'absolute',
+    width: MIC_SIZE,
+    height: MIC_SIZE,
+    borderRadius: MIC_SIZE / 2,
+    borderWidth: 2,
+    borderColor: colors.accent.primary,
+  },
   mic: {
     width: MIC_SIZE,
     height: MIC_SIZE,
     borderRadius: MIC_SIZE / 2,
-    backgroundColor: colors.accent.primary,
+    backgroundColor: colors.surface.glass,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -244,15 +288,18 @@ const styles = StyleSheet.create({
     minHeight: 96,
   },
   timer: {
-    ...typography.body,
-    fontSize: 32,
-    lineHeight: 38,
-    color: colors.text.primary,
+    fontFamily: fontFamily.serif,
+    fontSize: 48,
+    lineHeight: 54,
+    color: '#FFFFFF',
     fontVariant: ['tabular-nums'],
   },
   hint: {
     color: colors.text.secondary,
     textAlign: 'center',
+  },
+  hintRegular: {
+    fontFamily: fontFamily.regular,
   },
   error: {
     color: colors.status.danger,

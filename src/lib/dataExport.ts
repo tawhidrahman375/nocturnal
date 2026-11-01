@@ -30,8 +30,8 @@ export type DataExport = {
   coach_messages: Tables<'coach_messages'>[];
 };
 
-// Every distinct tag across all journal entries, unlike lib/dreamSigns.ts's
-// extractDreamSigns (which caps at MAX_DREAM_SIGNS for the reality-check feature) — a
+// Every distinct tag across all journal entries, unlike the dream signs in lib/dreamSigns.ts
+// (extracted from the last 14 entries for the reality-check feature) — a
 // full data export should list everything, not just the top few used for reminders.
 function computeDreamSignCounts(dreams: Dream[]): { tag: string; count: number }[] {
   const counts = new Map<string, { display: string; count: number }>();

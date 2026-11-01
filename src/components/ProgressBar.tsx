@@ -10,10 +10,11 @@ type ProgressBarProps = {
   height?: number;
 };
 
-// The Reveal token for a linear fill: animates width from 0 to `progress` instead of
-// snapping to it. Width can't be expressed as an animatable percentage string reliably
-// across platforms, so the track measures its own pixel width via onLayout and the fill
-// animates against that. Skipped under reduced motion (DESIGN.md section 10).
+// The Reveal token for a linear fill: slides in from 0 to `progress` instead of snapping
+// to it. The fill is always the track's full width and slides in from the left, clipped by
+// the track, so only a transform animates (native-driven) and the rounded end never
+// squashes. The track measures its own pixel width via onLayout to know the slide
+// distance. Skipped under reduced motion (DESIGN.md section 10).
 export function ProgressBar({ progress, color, trackColor, height = 8 }: ProgressBarProps) {
   const reducedMotion = useReducedMotion();
   const [trackWidth, setTrackWidth] = useState(0);
@@ -29,7 +30,7 @@ export function ProgressBar({ progress, color, trackColor, height = 8 }: Progres
       toValue: clamped,
       duration: DURATIONS.reveal,
       easing: EASE_OUT,
-      useNativeDriver: false,
+      useNativeDriver: true,
     });
     animation.start();
     return () => animation.stop();
@@ -51,7 +52,10 @@ export function ProgressBar({ progress, color, trackColor, height = 8 }: Progres
             height,
             borderRadius: height / 2,
             backgroundColor: color,
-            width: animatedProgress.interpolate({ inputRange: [0, 1], outputRange: [0, trackWidth] }),
+            width: trackWidth,
+            transform: [
+              { translateX: animatedProgress.interpolate({ inputRange: [0, 1], outputRange: [-trackWidth, 0] }) },
+            ],
           },
         ]}
       />

@@ -115,8 +115,7 @@ export function ProfileScreen() {
   useEffect(() => {
     if (dreamProfileShown) track('dream_profile_viewed');
   }, [dreamProfileShown]);
-  const { isPro, isLoading: subscriptionLoading, openPaywall, openCustomerCenter, restore } =
-    useSubscription();
+  const { isPro, isLoading: subscriptionLoading, openCustomerCenter, restore } = useSubscription();
 
   const lucidDreams = dreams.filter((dream) => dream.is_lucid).length;
 
@@ -129,7 +128,8 @@ export function ProfileScreen() {
         : 'Free';
   // Already subscribed: open the native self-service UI to manage or cancel.
   // Not subscribed: open the paywall to upgrade.
-  const handleSubscriptionPress = () => (isPro ? openCustomerCenter() : openPaywall());
+  const handleSubscriptionPress = () =>
+    isPro ? openCustomerCenter() : navigation.navigate('Paywall', { source: 'profile' });
 
   const [restoreMessage, setRestoreMessage] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);

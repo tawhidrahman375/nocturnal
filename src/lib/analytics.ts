@@ -18,6 +18,13 @@ export const posthog = new PostHog(API_KEY ?? 'analytics-disabled', {
 // this closed on purpose: dream text, transcripts, recall notes, sleep or health data and
 // anything else a user wrote or that describes their body never goes into an event, so
 // every property here is a boolean, a number or a value from a fixed list.
+// Paywall events carry the plan the user had selected and the price variant of the offering
+// they were shown (the RevenueCat experiment arm). Both are fixed lists, never free text.
+export type PaywallPlan = 'weekly' | 'monthly' | 'annual';
+export type PaywallVariant = 'price_699' | 'price_799' | 'price_899' | 'price_999' | 'unknown';
+export type PaywallSource = 'onboarding' | 'profile' | 'feature_gate';
+type PaywallProperties = { plan: PaywallPlan; variant: PaywallVariant; source: PaywallSource };
+
 type AnalyticsEvents = {
   dream_logged: { is_lucid: boolean; category: DreamCategory | null };
   voice_recording_saved: { duration_seconds: number };
@@ -25,8 +32,11 @@ type AnalyticsEvents = {
   wbtb_session_completed: { technique: string };
   reality_check_completed: undefined;
   coach_chat_opened: undefined;
-  paywall_shown: undefined;
-  paywall_converted: undefined;
+  paywall_shown: PaywallProperties;
+  paywall_converted: PaywallProperties;
+  paywall_dismissed: PaywallProperties;
+  fallback_shown: PaywallProperties;
+  fallback_converted: PaywallProperties;
   onboarding_completed: undefined;
   dream_profile_viewed: undefined;
 };

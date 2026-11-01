@@ -3,6 +3,7 @@ import { TextStyle } from 'react-native';
 export const fontFamily = {
   regular: 'Figtree_400Regular',
   medium: 'Figtree_500Medium',
+  semibold: 'Figtree_600SemiBold',
   // Every heading-tier variant below uses this one serif weight; body/label/caption stay Figtree.
   serif: 'Fraunces_600SemiBold',
 } as const;
@@ -23,6 +24,7 @@ export const typography: Record<
   | 'bodyMedium'
   | 'label'
   | 'caption'
+  | 'footnote'
   | 'overline',
   TextVariant
 > = {
@@ -57,6 +59,8 @@ export const typography: Record<
   bodyMedium: { fontFamily: fontFamily.medium, fontSize: 16, lineHeight: 24, letterSpacing: -0.1 },
   label: { fontFamily: fontFamily.medium, fontSize: 13, lineHeight: 18 },
   caption: { fontFamily: fontFamily.medium, fontSize: 12, lineHeight: 16 },
+  // Helper copy and disclaimers: a regular weight, quieter than caption's medium.
+  footnote: { fontFamily: fontFamily.regular, fontSize: 13, lineHeight: 18 },
   overline: {
     fontFamily: fontFamily.medium,
     fontSize: 12,

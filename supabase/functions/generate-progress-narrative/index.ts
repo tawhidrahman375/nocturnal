@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { ANTHROPIC_API_VERSION, CLAUDE_MODEL, NO_EM_DASH_RULE } from "../_shared/ai-config.ts";
+import { ANTHROPIC_API_VERSION, SONNET_MODEL, NO_EM_DASH_RULE } from "../_shared/ai-config.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -20,7 +20,7 @@ const PERIOD_CONFIG: Record<Period, { windowDays: number; regenerateAfterMs: num
   monthly: { windowDays: 30, regenerateAfterMs: 7 * DAY_MS, maxTokens: 320 },
 };
 
-// Two separate prompts on purpose (one Haiku call per period, never combined). Wording
+// Two separate prompts on purpose (one Sonnet call per period, never combined). Wording
 // follows the product spec, with its em dash swapped for a period since these prompts
 // generate user-facing text and the house rule (NO_EM_DASH_RULE) is appended anyway.
 const SYSTEM_PROMPTS: Record<Period, string> = {
@@ -168,9 +168,8 @@ async function callClaude(period: Period, prompt: string): Promise<string> {
       "anthropic-version": ANTHROPIC_API_VERSION,
     },
     body: JSON.stringify({
-      model: CLAUDE_MODEL,
+      model: SONNET_MODEL,
       max_tokens: PERIOD_CONFIG[period].maxTokens,
-      temperature: 0.5,
       system: `${SYSTEM_PROMPTS[period]} ${NO_EM_DASH_RULE}`,
       messages: [{ role: "user", content: prompt }],
     }),

@@ -78,9 +78,8 @@ const styles = StyleSheet.create({
     width: HALO_SIZE,
     height: HALO_SIZE,
     borderRadius: HALO_SIZE / 2,
-    backgroundColor: 'rgba(108, 142, 255, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(108, 142, 255, 0.18)',
+    // Glass with no edge: the circle is only a lifted patch of the sky, not an outlined shape.
+    backgroundColor: colors.surface.glassSoft,
   },
   clockRow: {
     flexDirection: 'row',
@@ -106,11 +105,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   actions: {
+    alignSelf: 'stretch',
     gap: spacing.sm,
   },
-  // Full width inside the screen's 24px side padding, like the other primary buttons.
+  // Full width inside the screen's 24px side padding; Button hugs its label unless told otherwise.
   primaryAction: {
     alignSelf: 'stretch',
+    width: '100%',
   },
   skip: {
     alignItems: 'center',

@@ -81,7 +81,7 @@ export const colors = {
     primary: '#F0F4FF',
     secondary: '#8B9CC7',
     tertiary: '#4B5A7A',
-    // Dark navy: white on the #6C8EFF accent fails 4.5:1 (design.md section 3f).
-    onAccent: '#12143A',
+    // White on the accent fill, app-wide, to match the auth and onboarding buttons.
+    onAccent: '#F0F4FF',
   },
 } as const;

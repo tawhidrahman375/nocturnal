@@ -18,7 +18,9 @@ const INITIAL_STATE: DreamInsightState = { insight: null, isLoading: false, erro
 // own 24h cache means only the first call in a given day actually reaches Claude;
 // every call after that just re-reads the cached row, so calling it from two screens
 // costs nothing extra.
-export function useDreamInsight(totalDreams: number) {
+//
+// `enabled` is false for free users: nothing is requested, so no Edge Function call is made.
+export function useDreamInsight(totalDreams: number, enabled = true) {
   const [state, setState] = useState<DreamInsightState>(INITIAL_STATE);
   // Re-requests when the dream count changes (a fresh journal entry may unlock the
   // minimum, or just be worth re-checking) but not on every re-render.
@@ -40,11 +42,11 @@ export function useDreamInsight(totalDreams: number) {
   }, []);
 
   useEffect(() => {
-    if (totalDreams < MIN_DREAMS_FOR_INSIGHT) return;
+    if (!enabled || totalDreams < MIN_DREAMS_FOR_INSIGHT) return;
     if (requestedForRef.current === totalDreams) return;
     requestedForRef.current = totalDreams;
     load();
-  }, [totalDreams, load]);
+  }, [enabled, totalDreams, load]);
 
   return { ...state, reload: load };
 }

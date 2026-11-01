@@ -13,6 +13,7 @@ import { TimeStepper } from '../../components/TimeStepper';
 import { useDreamSigns } from '../../hooks/useDreamSigns';
 import { usePrePermissionGate } from '../../hooks/usePrePermissionGate';
 import { useRealityCheckSettings } from '../../hooks/useRealityCheckSettings';
+import { useSubscription } from '../../hooks/useSubscription';
 import { DURATIONS, EASE_IN_OUT } from '../../lib/motion';
 import { notificationsSupported, requestRealityCheckPermission } from '../../lib/notifications';
 import {
@@ -34,6 +35,7 @@ type FrequencyMinutes = (typeof FREQUENCY_OPTIONS)[number];
 export function RealityCheckSetupScreen({ navigation }: Props) {
   const { settings, isLoading: settingsLoading, save } = useRealityCheckSettings();
   const { dreamSigns } = useDreamSigns();
+  const { isPro, isResolved } = useSubscription();
   const referenceDate = useMemo(() => new Date(), []);
 
   const [hasHydrated, setHasHydrated] = useState(false);
@@ -156,7 +158,7 @@ export function RealityCheckSetupScreen({ navigation }: Props) {
 
         <Arrive delay={50}>
           <Animated.View style={[styles.section, { opacity: sectionOpacity }]} pointerEvents={enabled ? 'auto' : 'none'}>
-            <Text style={[typography.label, styles.sectionLabel]}>How often</Text>
+            <Text style={[typography.overline, styles.sectionLabel]}>How often</Text>
             <ChipGroup
               options={FREQUENCY_OPTIONS}
               value={frequencyMinutes}
@@ -168,7 +170,7 @@ export function RealityCheckSetupScreen({ navigation }: Props) {
 
         <Arrive delay={90}>
           <Animated.View style={[styles.section, { opacity: sectionOpacity }]} pointerEvents={enabled ? 'auto' : 'none'}>
-            <Text style={[typography.label, styles.sectionLabel]}>Active from</Text>
+            <Text style={[typography.overline, styles.sectionLabel]}>Active from</Text>
             <TimeStepper
               value={activeStart}
               onChange={setActiveStart}
@@ -180,7 +182,7 @@ export function RealityCheckSetupScreen({ navigation }: Props) {
 
         <Arrive delay={130}>
           <Animated.View style={[styles.section, { opacity: sectionOpacity }]} pointerEvents={enabled ? 'auto' : 'none'}>
-            <Text style={[typography.label, styles.sectionLabel]}>Until</Text>
+            <Text style={[typography.overline, styles.sectionLabel]}>Until</Text>
             <TimeStepper
               value={activeEnd}
               onChange={setActiveEnd}
@@ -193,7 +195,7 @@ export function RealityCheckSetupScreen({ navigation }: Props) {
         <Arrive delay={170}>
           <Animated.View style={{ opacity: sectionOpacity }}>
             <Card style={styles.previewCard}>
-              <Text style={[typography.label, styles.previewLabel]}>Today&apos;s reminders</Text>
+              <Text style={[typography.overline, styles.previewLabel]}>Today&apos;s reminders</Text>
               <Text style={[typography.body, styles.previewBody]}>{slotTimes.join(' · ')}</Text>
             </Card>
           </Animated.View>
@@ -201,9 +203,21 @@ export function RealityCheckSetupScreen({ navigation }: Props) {
 
         <Arrive delay={210}>
           <Card style={styles.previewCard} elevated>
-            <Text style={[typography.label, styles.previewLabel]}>Your dream signs</Text>
+            <Text style={[typography.overline, styles.previewLabel]}>Your dream signs</Text>
             {dreamSigns.length > 0 ? (
               <Text style={[typography.body, styles.previewBody]}>{dreamSigns.join(', ')}</Text>
+            ) : isResolved && !isPro ? (
+              <>
+                <Text style={[typography.body, styles.previewBody]}>
+                  Pro finds the people, places and themes that keep showing up in your dreams, and
+                  builds your reminders around them.
+                </Text>
+                <Button
+                  size="sm"
+                  label="Unlock with Pro"
+                  onPress={() => navigation.navigate('Paywall', { source: 'feature_gate' })}
+                />
+              </>
             ) : (
               <Text style={[typography.body, styles.previewBody]}>
                 Add dream signs when you log a dream in your Journal, and reminders will start
@@ -231,7 +245,7 @@ export function RealityCheckSetupScreen({ navigation }: Props) {
           </Arrive>
         ) : null}
         {!notificationsSupported ? (
-          <Text style={[typography.label, styles.caption]}>
+          <Text style={[typography.footnote, styles.caption]}>
             Reminders only ring in the iOS and Android apps. Your schedule will still be saved.
           </Text>
         ) : null}
@@ -313,8 +327,6 @@ const styles = StyleSheet.create({
   },
   previewLabel: {
     color: colors.text.tertiary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   previewBody: {
     color: colors.text.secondary,

@@ -33,20 +33,19 @@ export function TextField({
       toValue: isFocused ? 1 : 0,
       duration: DURATIONS.cross,
       easing: EASE_IN_OUT,
-      useNativeDriver: false,
+      useNativeDriver: true,
     });
     animation.start();
     return () => animation.stop();
   }, [isFocused, focusProgress]);
 
   // Inputs are borderless (design.md section 4): focus brightens the fill to glass instead.
-  const backgroundColor = focusProgress.interpolate({
-    inputRange: [0, 1],
-    outputRange:
-      variant === 'glass'
-        ? [colors.surface.glass, colors.surface.glassFocused]
-        : [colors.surface.card, colors.surface.glass],
-  });
+  // The fill is two stacked layers whose opacities crossfade, since a color can't be
+  // animated natively but opacity can.
+  const restingFill = variant === 'glass' ? colors.surface.glass : colors.surface.card;
+  const focusedFill = variant === 'glass' ? colors.surface.glassFocused : colors.surface.glass;
+  const fillRadius = variant === 'glass' ? radius.glass : radius.button;
+  const restingOpacity = focusProgress.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
 
   return (
     <View style={styles.container}>
@@ -56,9 +55,16 @@ export function TextField({
           styles.inputWrap,
           variant === 'glass' && styles.inputWrapGlass,
           isFocused && styles.inputWrapFocused,
-          { backgroundColor },
         ]}
       >
+        <Animated.View
+          pointerEvents="none"
+          style={[StyleSheet.absoluteFill, { borderRadius: fillRadius, backgroundColor: restingFill, opacity: restingOpacity }]}
+        />
+        <Animated.View
+          pointerEvents="none"
+          style={[StyleSheet.absoluteFill, { borderRadius: fillRadius, backgroundColor: focusedFill, opacity: focusProgress }]}
+        />
         <TextInput
           style={[styles.input, accessory ? styles.inputWithAccessory : null, style]}
           placeholderTextColor={variant === 'glass' ? colors.text.secondary : colors.text.tertiary}

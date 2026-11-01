@@ -19,13 +19,15 @@ const LOADING_STATE: NarrativeState = { weekly: null, monthly: null, isLoading: 
 // a brand-new account never flashes a skeleton for a call that is not going to happen.
 // With fewer than MIN_DREAMS_FOR_NARRATIVE dreams in total the Edge Function is never
 // called at all, and both periods show `fallback`.
-export function useProgressNarratives(totalDreams: number, dreamsLoading: boolean) {
+//
+// `enabled` is false for free users: the Edge Function is never called.
+export function useProgressNarratives(totalDreams: number, dreamsLoading: boolean, enabled = true) {
   const [state, setState] = useState<NarrativeState>(LOADING_STATE);
 
   const hasEnoughData = totalDreams >= MIN_DREAMS_FOR_NARRATIVE;
 
   useEffect(() => {
-    if (dreamsLoading || !hasEnoughData) return;
+    if (!enabled || dreamsLoading || !hasEnoughData) return;
 
     let ignore = false;
     (async () => {
@@ -46,7 +48,7 @@ export function useProgressNarratives(totalDreams: number, dreamsLoading: boolea
     return () => {
       ignore = true;
     };
-  }, [dreamsLoading, hasEnoughData]);
+  }, [enabled, dreamsLoading, hasEnoughData]);
 
   if (!dreamsLoading && !hasEnoughData) {
     return { weekly: null, monthly: null, isLoading: false, fallback: PROGRESS_NARRATIVE_FALLBACK };

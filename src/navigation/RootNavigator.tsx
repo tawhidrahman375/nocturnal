@@ -6,10 +6,12 @@ import { navigationRef } from './navigationRef';
 import { PendingRecordingSheet } from '../components/PendingRecordingSheet';
 import { QuickRecordSetup } from '../components/QuickRecordSetup';
 import { trackScreen } from '../lib/analytics';
+import { markPaywallPending } from '../lib/paywall';
 import { useAuth } from '../hooks/useAuth';
 import { useMildPromptNotificationRouting } from '../hooks/useMildPromptNotificationRouting';
 import { useMildPromptScheduling } from '../hooks/useMildPromptScheduling';
 import { useOnboardingGate } from '../hooks/useOnboardingGate';
+import { usePaywallGate } from '../hooks/usePaywallGate';
 import { usePurchasesIdentity } from '../hooks/usePurchasesIdentity';
 import { useQuickRecordNotificationRouting } from '../hooks/useQuickRecordNotificationRouting';
 import { useRealityCheckNotificationRouting } from '../hooks/useRealityCheckNotificationRouting';
@@ -44,23 +46,31 @@ export function RootNavigator() {
   const { session } = useAuth();
   const [isNavReady, setIsNavReady] = useState(false);
   const { needsOnboarding, markComplete } = useOnboardingGate(session);
+  const showPaywall = usePaywallGate(session, needsOnboarding);
 
   useWbtbNotificationRouting(!!session && isNavReady);
   useRealityCheckNotificationRouting(!!session);
   useMildPromptNotificationRouting(!!session && isNavReady);
   // The recording screen lives in the signed-in app stack, so only route to it once that
   // stack (and not the onboarding quiz) is what is on screen.
-  useQuickRecordNotificationRouting(!!session && isNavReady && needsOnboarding === false);
+  useQuickRecordNotificationRouting(!!session && isNavReady && needsOnboarding === false && showPaywall === false);
   useMildPromptScheduling(!!session);
   usePurchasesIdentity(session);
+
+  // The paywall is flagged pending before the gate flips, so the very next render already
+  // knows to open on it instead of flashing Home first.
+  const handleOnboardingComplete = async () => {
+    if (session) await markPaywallPending(session.user.id);
+    markComplete();
+  };
 
   const content = !session ? (
     <AuthNavigator />
   ) : needsOnboarding === null ? null : needsOnboarding ? (
-    <OnboardingQuizScreen onComplete={markComplete} />
-  ) : (
+    <OnboardingQuizScreen onComplete={handleOnboardingComplete} />
+  ) : showPaywall === null ? null : (
     <>
-      <AppNavigator />
+      <AppNavigator startWithPaywall={showPaywall} />
       <QuickRecordSetup />
       <PendingRecordingSheet />
     </>

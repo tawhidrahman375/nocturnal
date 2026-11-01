@@ -1,4 +1,4 @@
-import { Figtree_400Regular, Figtree_500Medium } from '@expo-google-fonts/figtree';
+import { Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold } from '@expo-google-fonts/figtree';
 import { Fraunces_600SemiBold } from '@expo-google-fonts/fraunces';
 import { useFonts } from 'expo-font';
 import { PostHogProvider } from 'posthog-react-native';
@@ -23,6 +23,7 @@ function AppShell() {
   const [fontsLoaded] = useFonts({
     Figtree_400Regular,
     Figtree_500Medium,
+    Figtree_600SemiBold,
     Fraunces_600SemiBold,
   });
 

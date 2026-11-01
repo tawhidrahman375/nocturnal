@@ -4,12 +4,15 @@ import Purchases, {
   LOG_LEVEL,
   PURCHASES_ERROR_CODE,
   PurchasesError,
+  PurchasesOffering,
+  PurchasesPackage,
 } from 'react-native-purchases';
 import RevenueCatUI, {
   PAYWALL_RESULT,
   PresentCustomerCenterParams,
   PresentPaywallParams,
 } from 'react-native-purchases-ui';
+import { PaywallVariant } from './analytics';
 
 // RevenueCat's native SDK has no purchase support on web without a separate
 // "RevenueCat Billing" + Stripe setup (a different product configured entirely in
@@ -108,4 +111,66 @@ export async function presentCustomerCenter(params?: PresentCustomerCenterParams
 
 export function isUserCancelledError(error: unknown): boolean {
   return (error as PurchasesError)?.code === PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR;
+}
+
+// For code outside React (lib helpers such as the dream sign extractor) that needs the
+// entitlement once. Reads RevenueCat's cached CustomerInfo, so it is cheap and works
+// offline. Anything that goes wrong reads as not subscribed.
+export async function isProNow(): Promise<boolean> {
+  try {
+    return hasProEntitlement(await getCustomerInfo());
+  } catch {
+    return false;
+  }
+}
+
+// --- Paywall offerings ---------------------------------------------------------------
+//
+// The price A/B test lives entirely in the RevenueCat dashboard (see docs/paywall-setup.md):
+// four offerings, one per monthly price, each holding a weekly, a monthly and an annual
+// package, run as an Experiment. RevenueCat assigns each user one arm and returns it as
+// `offerings.current`, so the client never picks a price itself. It only reads which arm
+// it was given, for analytics.
+
+// Offering id of the abandoned-transaction offer shown when the main paywall is dismissed.
+export const FALLBACK_OFFERING_ID = 'fallback_offer';
+
+const PRICE_VARIANT_BY_OFFERING: Record<string, PaywallVariant> = {
+  price_699: 'price_699',
+  price_799: 'price_799',
+  price_899: 'price_899',
+  price_999: 'price_999',
+};
+
+export function variantOf(offering: PurchasesOffering | null): PaywallVariant {
+  if (!offering) return 'unknown';
+  const fromMetadata = offering.metadata?.variant;
+  const key = typeof fromMetadata === 'string' ? fromMetadata : offering.identifier;
+  return PRICE_VARIANT_BY_OFFERING[key] ?? 'unknown';
+}
+
+export type PaywallOfferings = {
+  main: PurchasesOffering | null;
+  fallback: PurchasesOffering | null;
+};
+
+export async function getPaywallOfferings(): Promise<PaywallOfferings> {
+  if (!purchasesSupported || !isConfigured) return { main: null, fallback: null };
+  const offerings = await Purchases.getOfferings();
+  return { main: offerings.current, fallback: offerings.all[FALLBACK_OFFERING_ID] ?? null };
+}
+
+// Resolves to whether the purchase unlocked Pro. A user backing out of the store sheet is
+// a normal outcome, not an error, so it resolves to `cancelled` instead of throwing.
+export async function purchasePlan(
+  pkg: PurchasesPackage
+): Promise<{ status: 'purchased' | 'cancelled' }> {
+  try {
+    const { customerInfo } = await Purchases.purchasePackage(pkg);
+    if (!hasProEntitlement(customerInfo)) throw new Error('Purchase did not unlock Nocturnal Pro.');
+    return { status: 'purchased' };
+  } catch (e) {
+    if (isUserCancelledError(e)) return { status: 'cancelled' };
+    throw e;
+  }
 }

@@ -6,8 +6,11 @@ import { CoachChatScreen } from '../screens/coach/CoachChatScreen';
 import { LegalDocumentScreen } from '../screens/legal/LegalDocumentScreen';
 import { MildPromptScreen } from '../screens/mild-prompt/MildPromptScreen';
 import { NotificationSettingsScreen } from '../screens/notifications/NotificationSettingsScreen';
+import { PaywallScreen } from '../screens/paywall/PaywallScreen';
 import { RecordDreamScreen } from '../screens/record/RecordDreamScreen';
 import { RealityCheckSetupScreen } from '../screens/reality-check/RealityCheckSetupScreen';
+import { TechniqueDetailScreen } from '../screens/techniques/TechniqueDetailScreen';
+import { TechniqueLibraryScreen } from '../screens/techniques/TechniqueLibraryScreen';
 import { WbtbDefaultsScreen } from '../screens/wbtb/WbtbDefaultsScreen';
 import { WbtbSessionScreen } from '../screens/wbtb/WbtbSessionScreen';
 import { WbtbSetupScreen } from '../screens/wbtb/WbtbSetupScreen';
@@ -15,9 +18,12 @@ import { colors } from '../theme';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
-export function AppNavigator() {
+// `startWithPaywall` is read once, at mount: the hard paywall is the first thing a user sees
+// after onboarding, and Tabs sits underneath it for the paywall to hand over to.
+export function AppNavigator({ startWithPaywall = false }: { startWithPaywall?: boolean }) {
   return (
     <Stack.Navigator
+      initialRouteName={startWithPaywall ? 'Paywall' : 'Tabs'}
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: colors.background.primary },
@@ -50,6 +56,14 @@ export function AppNavigator() {
       />
       <Stack.Screen name="WbtbDefaults" component={WbtbDefaultsScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="LegalDocument" component={LegalDocumentScreen} options={{ presentation: 'modal' }} />
+      <Stack.Screen name="TechniqueLibrary" component={TechniqueLibraryScreen} />
+      <Stack.Screen name="TechniqueDetail" component={TechniqueDetailScreen} />
+      <Stack.Screen
+        name="Paywall"
+        component={PaywallScreen}
+        initialParams={{ source: 'onboarding' }}
+        options={{ presentation: 'fullScreenModal', gestureEnabled: false, animation: 'fade' }}
+      />
     </Stack.Navigator>
   );
 }

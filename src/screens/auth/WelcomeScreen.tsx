@@ -198,7 +198,7 @@ function MoonlitBackground({ started }: { started: boolean }) {
         {...RISE.moon}
         scaleFrom={MOON_SCALE_FROM}
         // Grows about the moon's own centre, not the screen's.
-        transformOrigin={['50%', MOON.cy * skyScale]}
+        transformOrigin={['50%', MOON.cy * skyScale, 0]}
         style={styles.layer}
       >
         <SkyLayer>

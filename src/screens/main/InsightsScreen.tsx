@@ -22,6 +22,7 @@ import { Card } from '../../components/Card';
 import { EmptyState } from '../../components/EmptyState';
 import { NightSky } from '../../components/NightSky';
 import { ProgressRing } from '../../components/ProgressRing';
+import { ProUpsell } from '../../components/ProUpsell';
 import { ScreenContainer } from '../../components/ScreenContainer';
 import { SkeletonLines } from '../../components/SkeletonLines';
 import { StatPill } from '../../components/StatPill';
@@ -30,6 +31,7 @@ import { useDreams } from '../../hooks/useDreams';
 import { useProfile } from '../../hooks/useProfile';
 import { useProgressNarratives } from '../../hooks/useProgressNarratives';
 import { SleepInsightState, useSleepInsight } from '../../hooks/useSleepInsight';
+import { useSubscription } from '../../hooks/useSubscription';
 import { useTechniqueRecommendation } from '../../hooks/useTechniqueRecommendation';
 import { openHealthConnectInstall, openHealthSettings } from '../../lib/sleepData';
 import {
@@ -41,7 +43,7 @@ import {
   SLEEP_INSIGHT_UNSUPPORTED,
 } from '../../lib/sleepInsight';
 import { MainTabParamList } from '../../navigation/types';
-import { colors, spacing, typography } from '../../theme';
+import { colors, fontFamily, radius, spacing, typography } from '../../theme';
 
 function CoachChatEntry() {
   // Untyped useNavigation (not the tab-scoped hook InsightsScreen itself uses below) so
@@ -53,16 +55,14 @@ function CoachChatEntry() {
     <AnimatedPressable
       onPress={() => navigation.navigate('CoachChat')}
       accessibilityRole="button"
-      accessibilityLabel="Open coach chat"
+      accessibilityLabel="Talk to Cleo"
     >
       <Card style={styles.coachCard} elevated>
-        <View style={styles.coachIconWrap}>
-          <MessageCircle color={colors.accent.primary} size={20} strokeWidth={1.75} />
-        </View>
+        <MessageCircle color={colors.accent.primary} size={32} strokeWidth={1.5} />
         <View style={styles.coachCopy}>
-          <Text style={[typography.bodyMedium, styles.coachTitle]}>Talk to your coach</Text>
+          <Text style={styles.coachTitle}>Talk to Cleo</Text>
           <Text style={[typography.label, styles.coachSubtitle]}>
-            Techniques, sleep science, your own dream signs.
+            Ask about your dreams, techniques, or how to go lucid tonight.
           </Text>
         </View>
         <ChevronRight color={colors.text.tertiary} size={20} strokeWidth={1.5} />
@@ -75,8 +75,18 @@ function CoachChatEntry() {
 // empty-account branches below so the no-history fallback (lib/techniqueRecommendation.ts)
 // is reachable on a fresh account too, not just once there's enough data for the rest of
 // the screen to unlock.
-function TechniqueAccordion() {
-  const { recommendation, isLoading } = useTechniqueRecommendation();
+function TechniqueAccordion({ isPro, locked }: { isPro: boolean; locked: boolean }) {
+  const { recommendation, isLoading } = useTechniqueRecommendation(isPro);
+
+  if (locked) {
+    return (
+      <ProUpsell
+        icon={Compass}
+        label="YOUR TECHNIQUE"
+        text="A technique picked for you, based on how your own sessions go."
+      />
+    );
+  }
 
   return (
     <AccordionItem
@@ -91,8 +101,24 @@ function TechniqueAccordion() {
 // The weekly and monthly progress narratives. No retry affordance on purpose: any failure,
 // or a period the function had nothing for, just shows the plain fallback line. With fewer
 // than two dreams logged the hook makes no API call and both rows show the fallback line.
-function ProgressNarrativeAccordions({ narratives }: { narratives: ReturnType<typeof useProgressNarratives> }) {
+function ProgressNarrativeAccordions({
+  narratives,
+  locked,
+}: {
+  narratives: ReturnType<typeof useProgressNarratives>;
+  locked: boolean;
+}) {
   const { weekly, monthly, isLoading, fallback } = narratives;
+
+  if (locked) {
+    return (
+      <ProUpsell
+        icon={CalendarDays}
+        label="YOUR PROGRESS"
+        text="Weekly and monthly summaries of how your dreams are changing."
+      />
+    );
+  }
 
   return (
     <>
@@ -183,15 +209,38 @@ function SleepInsightCard({ state, onConnect }: { state: SleepInsightState; onCo
   );
 }
 
+function SleepCard({
+  locked,
+  state,
+  onConnect,
+}: {
+  locked: boolean;
+  state: SleepInsightState;
+  onConnect: () => void;
+}) {
+  if (locked) {
+    return (
+      <ProUpsell icon={BedDouble} label="SLEEP AND DREAMS" text="See how your sleep shapes the dreams you remember." />
+    );
+  }
+  return <SleepInsightCard state={state} onConnect={onConnect} />;
+}
+
 export function InsightsScreen() {
   const { dreams, isLoading: dreamsLoading } = useDreams();
   const { profile } = useProfile();
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
 
   const totalDreams = dreams.length;
-  const narratives = useProgressNarratives(totalDreams, dreamsLoading);
-  const sleep = useSleepInsight(dreams, dreamsLoading);
-  const { insight, isLoading: insightLoading } = useDreamInsight(totalDreams);
+  // Pattern analysis, progress narratives, the sleep correlation and the technique
+  // recommendation are Pro. The hooks are switched off for a free user so none of them reach
+  // an Edge Function; `locked` waits for the first CustomerInfo so a subscriber never sees
+  // the upsell flash while it loads.
+  const { isPro, isResolved } = useSubscription();
+  const locked = isResolved && !isPro;
+  const narratives = useProgressNarratives(totalDreams, dreamsLoading, isPro);
+  const sleep = useSleepInsight(dreams, dreamsLoading, isPro);
+  const { insight, isLoading: insightLoading } = useDreamInsight(totalDreams, isPro);
   const lucidDreams = dreams.filter((dream) => dream.is_lucid).length;
   const lucidRate = totalDreams > 0 ? Math.round((lucidDreams / totalDreams) * 100) : 0;
   const currentStreak = profile?.current_streak ?? 0;
@@ -204,15 +253,14 @@ export function InsightsScreen() {
           <Text style={[typography.heroTitle, styles.title]}>Insights</Text>
         </View>
 
-        <Arrive style={styles.coachEntryWrap}>
-          <CoachChatEntry />
-        </Arrive>
-
         {totalDreams === 0 ? (
           // Scrollable, unlike before: the technique recommendation is a full paragraph and
           // the two narrative cards follow it, so together they no longer fit above the
           // tab bar on a phone.
           <ScrollView contentContainerStyle={styles.emptyScroll} showsVerticalScrollIndicator={false}>
+            <Arrive>
+              <CoachChatEntry />
+            </Arrive>
             <EmptyState
               icon={Waves}
               title="Nothing to trace yet."
@@ -221,14 +269,20 @@ export function InsightsScreen() {
               action={{ label: 'Log a dream', onPress: () => navigation.navigate('Journal') }}
             />
             <Arrive delay={80} style={styles.accordionStack}>
-              <TechniqueAccordion />
-              <ProgressNarrativeAccordions narratives={narratives} />
-              {Platform.OS !== 'web' ? <SleepInsightCard state={sleep.state} onConnect={sleep.connect} /> : null}
+              <TechniqueAccordion isPro={isPro} locked={locked} />
+              <ProgressNarrativeAccordions narratives={narratives} locked={locked} />
+              {Platform.OS !== 'web' ? (
+                <SleepCard locked={locked} state={sleep.state} onConnect={sleep.connect} />
+              ) : null}
             </Arrive>
           </ScrollView>
         ) : (
           <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
             <Arrive>
+              <CoachChatEntry />
+            </Arrive>
+
+            <Arrive delay={30}>
               <Card style={styles.heroCard} elevated>
                 <ProgressRing size={140} strokeWidth={12} progress={lucidRate / 100} color={colors.status.lucid}>
                   <Text style={[typography.displayLg, styles.heroValue]}>{lucidRate}%</Text>
@@ -248,22 +302,32 @@ export function InsightsScreen() {
 
             <Arrive delay={90} style={styles.accordionStack}>
               {totalDreams >= MIN_DREAMS_FOR_INSIGHT ? (
-                <AccordionItem
-                  icon={Sparkles}
-                  label="INSIGHT"
-                  text={
-                    insight
-                      ? insight.content
-                      : insightLoading
-                        ? 'Reading your patterns...'
-                        : "Check back after tonight's entry."
-                  }
-                  muted={!insight}
-                />
+                locked ? (
+                  <ProUpsell
+                    icon={Sparkles}
+                    label="INSIGHT"
+                    text="The patterns that keep showing up across your dreams."
+                  />
+                ) : (
+                  <AccordionItem
+                    icon={Sparkles}
+                    label="INSIGHT"
+                    text={
+                      insight
+                        ? insight.content
+                        : insightLoading || !isResolved
+                          ? 'Reading your patterns...'
+                          : "Check back after tonight's entry."
+                    }
+                    muted={!insight}
+                  />
+                )
               ) : null}
-              <TechniqueAccordion />
-              <ProgressNarrativeAccordions narratives={narratives} />
-              {Platform.OS !== 'web' ? <SleepInsightCard state={sleep.state} onConnect={sleep.connect} /> : null}
+              <TechniqueAccordion isPro={isPro} locked={locked} />
+              <ProgressNarrativeAccordions narratives={narratives} locked={locked} />
+              {Platform.OS !== 'web' ? (
+                <SleepCard locked={locked} state={sleep.state} onConnect={sleep.connect} />
+              ) : null}
             </Arrive>
           </ScrollView>
         )}
@@ -286,7 +350,7 @@ const styles = StyleSheet.create({
   },
   scroll: {
     paddingHorizontal: spacing.screenPadding,
-    paddingTop: spacing.lg,
+    paddingTop: spacing.md,
     paddingBottom: spacing.tabBarClearance,
     gap: spacing.md,
   },
@@ -344,28 +408,23 @@ const styles = StyleSheet.create({
   insightPending: {
     color: colors.text.tertiary,
   },
-  coachEntryWrap: {
-    paddingHorizontal: spacing.screenPadding,
-    paddingBottom: spacing.md,
-  },
+  // The hero action on this screen: taller than a list row, on the 10% glass, no border.
   coachCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-  },
-  coachIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.accent.primaryMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.lg,
+    borderRadius: radius.glass,
+    backgroundColor: colors.surface.glass,
   },
   coachCopy: {
     flex: 1,
     gap: spacing.xs / 2,
   },
   coachTitle: {
+    fontFamily: fontFamily.semibold,
+    fontSize: 18,
+    lineHeight: 24,
     color: colors.text.primary,
   },
   coachSubtitle: {

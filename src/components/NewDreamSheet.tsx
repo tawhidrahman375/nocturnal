@@ -62,8 +62,15 @@ export function NewDreamSheet({ visible, initialContent, onClose, onSubmit }: Ne
           </View>
 
           <View style={styles.form}>
-            <TextField label="Title" value={title} onChangeText={setTitle} placeholder="A brief title" />
             <TextField
+              variant="glass"
+              label="Title"
+              value={title}
+              onChangeText={setTitle}
+              placeholder="A brief title"
+            />
+            <TextField
+              variant="glass"
               label="What happened?"
               value={content}
               onChangeText={setContent}
@@ -73,6 +80,7 @@ export function NewDreamSheet({ visible, initialContent, onClose, onSubmit }: Ne
               style={styles.textArea}
             />
             <TextField
+              variant="glass"
               label="Dream signs"
               value={tagsInput}
               onChangeText={setTagsInput}
@@ -86,7 +94,7 @@ export function NewDreamSheet({ visible, initialContent, onClose, onSubmit }: Ne
                 This was a lucid dream
               </Text>
             </Pressable>
-            <Button label="Save dream" onPress={handleSave} loading={saving} />
+            <Button label="Save dream" onPress={handleSave} loading={saving} style={styles.saveButton} />
           </View>
         </View>
       </View>
@@ -104,8 +112,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.secondary,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    borderWidth: 1,
-    borderColor: colors.border.default,
     padding: spacing.lg,
     paddingBottom: spacing.xl,
     gap: spacing.lg,
@@ -126,22 +132,24 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     paddingTop: spacing.sm,
   },
+  // A glass pill, not an outlined one: it fills with the accent when on.
   lucidToggle: {
-    borderWidth: 1,
-    borderColor: colors.border.default,
     borderRadius: radius.pill,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.sm + spacing.xs,
     alignItems: 'center',
-    backgroundColor: colors.surface.card,
+    backgroundColor: colors.surface.glassSoft,
   },
   lucidToggleActive: {
-    borderColor: colors.status.lucid,
-    backgroundColor: 'rgba(52, 211, 153, 0.12)',
+    backgroundColor: colors.accent.primary,
   },
   lucidText: {
-    color: colors.text.secondary,
+    color: colors.text.primary,
   },
   lucidTextActive: {
-    color: colors.status.lucid,
+    color: '#FFFFFF',
+  },
+  // Full width; buttons otherwise hug their label.
+  saveButton: {
+    alignSelf: 'stretch',
   },
 });

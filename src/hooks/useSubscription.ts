@@ -1,21 +1,18 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useEffect, useState } from 'react';
 import { CustomerInfo } from 'react-native-purchases';
-import { PAYWALL_RESULT } from 'react-native-purchases-ui';
-import { track } from '../lib/analytics';
 import {
   addCustomerInfoListener,
   getCustomerInfo,
   hasProEntitlement,
   presentCustomerCenter,
-  presentPaywall,
   purchasesSupported,
   restorePurchases,
 } from '../lib/purchases';
 
 // Owns the signed-in user's subscription state for whichever screen calls it, and
-// the three actions a settings screen needs: open the paywall, open Customer
-// Center, and restore purchases. Refreshes on the live CustomerInfo listener so a
+// the actions a settings screen needs: open Customer Center and restore purchases (the
+// paywall itself is the Paywall screen). Refreshes on the live CustomerInfo listener so a
 // purchase made inside the paywall (or a renewal) is reflected without a manual
 // reload.
 export function useSubscription() {
@@ -46,16 +43,6 @@ export function useSubscription() {
 
   useEffect(() => addCustomerInfoListener(setCustomerInfo), []);
 
-  const openPaywall = useCallback(async () => {
-    if (!purchasesSupported) return PAYWALL_RESULT.NOT_PRESENTED;
-    track('paywall_shown');
-    const result = await presentPaywall();
-    // A restore is an existing subscriber getting access back, not a new conversion.
-    if (result === PAYWALL_RESULT.PURCHASED) track('paywall_converted');
-    if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) await refresh();
-    return result;
-  }, [refresh]);
-
   const openCustomerCenter = useCallback(async () => {
     if (!purchasesSupported) return;
     await presentCustomerCenter();
@@ -79,8 +66,11 @@ export function useSubscription() {
     customerInfo,
     isPro: hasProEntitlement(customerInfo),
     isLoading,
+    // False only until the first CustomerInfo arrives. Gated screens wait on this before
+    // showing an upsell, so a paying user never sees "locked" flash while it loads (isLoading
+    // alone goes true again on every refresh).
+    isResolved: !purchasesSupported || customerInfo !== null || !isLoading,
     refresh,
-    openPaywall,
     openCustomerCenter,
     restore,
   };

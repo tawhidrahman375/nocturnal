@@ -1,4 +1,4 @@
-import { extractDreamSigns } from './dreamSigns';
+import { fetchDreamSigns } from './dreamSigns';
 import {
   MAX_REALITY_CHECK_SLOTS,
   RealityCheckSlot,
@@ -117,8 +117,7 @@ export async function applyRealityCheckSchedule(settings: RealityCheckSettings, 
 export async function refreshRealityCheckSchedule(userId: string) {
   const settings = await fetchRealityCheckSettings(userId);
   if (!settings) return;
-  const { data } = await supabase.from('dreams').select('tags').eq('user_id', userId);
-  await applyRealityCheckSchedule(settings, extractDreamSigns(data ?? []));
+  await applyRealityCheckSchedule(settings, await fetchDreamSigns(userId));
 }
 
 export async function logRealityCheckReminder(

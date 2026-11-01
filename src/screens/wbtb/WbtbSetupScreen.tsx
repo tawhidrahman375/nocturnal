@@ -1,16 +1,14 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Moon, X } from 'lucide-react-native';
+import { Moon } from 'lucide-react-native';
 import { useState } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Linking, StyleSheet, Text, View } from 'react-native';
 import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { Arrive } from '../../components/Arrive';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { ChipGroup } from '../../components/ChipGroup';
-import { Panel } from '../../components/Panel';
+import { NightSetupLayout } from '../../components/NightSetupLayout';
 import { PrePermissionModal } from '../../components/PrePermissionModal';
-import { ScreenContainer } from '../../components/ScreenContainer';
 import { TimeStepper } from '../../components/TimeStepper';
 import { useAuth } from '../../hooks/useAuth';
 import { useNotificationSettings } from '../../hooks/useNotificationSettings';
@@ -37,9 +35,11 @@ import {
 } from '../../lib/wbtb';
 import { planSession } from '../../lib/wbtbSessions';
 import { AppStackParamList } from '../../navigation/types';
-import { colors, spacing, typography } from '../../theme';
+import { colors, radius, spacing, typography } from '../../theme';
 
 const MINUTES_PER_DAY = 24 * 60;
+// How far back the bedtime picker lets the time go (its `min` below).
+const SLEEP_TIME_PAST_GRACE_MINUTES = 120;
 
 type Props = NativeStackScreenProps<AppStackParamList, 'WbtbSetup'>;
 
@@ -79,10 +79,6 @@ export function WbtbSetupScreen({ navigation, route }: Props) {
     setWakeWindowMinutes(wbtbDefaults.wake_window_minutes as WakeWindowMinutes);
   }
   const alarmEnabled = notificationSettings?.wbtb_alarm_enabled ?? true;
-  // ScreenContainer only reserves the top safe-area inset here (edges={['top']}), so
-  // the Panel — and the fixed footer living inside it — can bleed to the literal
-  // screen bottom per DESIGN.md §4; the bottom inset is added to the footer by hand.
-  const insets = useSafeAreaInsets();
 
   // Defaults the bedtime picker so the alarm lands on the user's own natural wake
   // time (from onboarding) instead of the generic "round up from now" default —
@@ -96,7 +92,14 @@ export function WbtbSetupScreen({ navigation, route }: Props) {
     const bedtimeMinutes =
       ((profile.natural_wake_time - RECOMMENDED_SLEEP_MINUTES) % MINUTES_PER_DAY + MINUTES_PER_DAY) %
       MINUTES_PER_DAY;
-    setSleepAt(timeOfDayFromMinutes(bedtimeMinutes, new Date()));
+    const bedtime = timeOfDayFromMinutes(bedtimeMinutes, new Date());
+    // A bedtime that has already gone by today means tonight's is tomorrow's occurrence.
+    // Left in the past it would sit below TimeStepper's minimum, which locks every arrow,
+    // and the session it saves would already be stale.
+    if (bedtime < addMinutes(new Date(), -SLEEP_TIME_PAST_GRACE_MINUTES)) {
+      bedtime.setDate(bedtime.getDate() + 1);
+    }
+    setSleepAt(bedtime);
   }
 
   const wakeAt = calculateWakeTime(sleepAt, sleepMinutes);
@@ -122,92 +125,23 @@ export function WbtbSetupScreen({ navigation, route }: Props) {
   };
 
   return (
-    <ScreenContainer edges={['top']} edgeToEdge>
-      <View style={styles.header}>
-        <View style={styles.headerText}>
-          <Text style={[typography.label, styles.eyebrow]}>Wake Back To Bed</Text>
-          <Text style={[typography.displayMd, styles.title]}>
-            {plan ? 'Change your alarm' : 'Plan tonight'}
-          </Text>
-        </View>
-        <AnimatedPressable
-          onPress={() => navigation.goBack()}
-          hitSlop={12}
-          accessibilityRole="button"
-          accessibilityLabel="Close"
-        >
-          <X color={colors.text.secondary} size={24} strokeWidth={1.5} />
-        </AnimatedPressable>
-      </View>
-
-      <Panel>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <Arrive>
-            <View style={styles.section}>
-              <Text style={[typography.label, styles.sectionLabel]}>Going to sleep at</Text>
-              <TimeStepper
-                value={sleepAt}
-                onChange={setSleepAt}
-                min={addMinutes(now, -120)}
-                max={addMinutes(now, 23 * 60)}
-              />
-            </View>
-          </Arrive>
-
-          <Arrive delay={50}>
-            <View style={styles.section}>
-              <Text style={[typography.label, styles.sectionLabel]}>Sleep before waking</Text>
-              <ChipGroup
-                options={SLEEP_DURATION_OPTIONS}
-                value={sleepMinutes}
-                onChange={setSleepMinutes}
-                format={formatDuration}
-              />
-              <Text style={[typography.label, styles.caption]}>
-                6h is recommended. It lands late in your fourth sleep cycle, when REM periods run
-                longest and dreams are easiest to recall.
-              </Text>
-            </View>
-          </Arrive>
-
-          <Arrive delay={100}>
-            <View style={styles.section}>
-              <Text style={[typography.label, styles.sectionLabel]}>Wake window</Text>
-              <ChipGroup
-                options={WAKE_WINDOW_OPTIONS}
-                value={wakeWindowMinutes}
-                onChange={setWakeWindowMinutes}
-                format={(m) => `${m} min`}
-              />
-              <Text style={[typography.label, styles.caption]}>
-                Long enough to wake your mind, short enough to slip back into REM.
-              </Text>
-            </View>
-          </Arrive>
-
-          <Arrive delay={150}>
-            <View style={styles.section}>
-              <Text style={[typography.label, styles.sectionLabel]}>Technique</Text>
-              <ChipGroup
-                options={TECHNIQUE_OPTIONS}
-                value={technique}
-                onChange={setTechnique}
-                format={(t) => TECHNIQUE_LABELS[t]}
-              />
-              <Text style={[typography.label, styles.caption]}>{TECHNIQUE_DESCRIPTIONS[technique]}</Text>
-            </View>
-          </Arrive>
-
-          <Arrive delay={200}>
-            <Card style={styles.timeline}>
-              <TimelineRow label="Sleep" time={formatTime(sleepAt)} />
-              <TimelineRow label="Alarm" time={formatTime(wakeAt)} highlight />
-              <TimelineRow label="Back to sleep" time={`~${formatTime(backToSleepAt)}`} last />
-            </Card>
-          </Arrive>
-        </ScrollView>
-
-        <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
+    <NightSetupLayout
+      eyebrow="Wake Back To Bed"
+      title={plan ? 'Change your alarm' : 'Plan tonight'}
+      onClose={() => navigation.goBack()}
+      overlay={
+        <PrePermissionModal
+          visible={alarmPermission.visible}
+          icon={Moon}
+          headline="WBTB only works if the alarm actually wakes you"
+          body="Your WBTB alarm needs to break through Do Not Disturb and sleep mode. Allow this so Nocturnal can wake you at exactly the right moment in your sleep cycle."
+          ctaLabel="Allow Alarm"
+          onAllow={alarmPermission.handleAllow}
+          onDismiss={alarmPermission.handleDismiss}
+        />
+      }
+      footer={
+        <>
           {permissionBlocked ? (
             <Arrive from="down" style={styles.notice}>
               <Text style={[typography.label, styles.errorText]}>
@@ -224,32 +158,90 @@ export function WbtbSetupScreen({ navigation, route }: Props) {
             </Arrive>
           ) : null}
           {!notificationsSupported ? (
-            <Text style={[typography.label, styles.caption]}>
+            <Text style={[typography.footnote, styles.disclaimer]}>
               Alarms only ring in the iOS and Android apps. Your session will still be saved.
             </Text>
           ) : !alarmEnabled ? (
-            <Text style={[typography.label, styles.caption]}>
-              Your WBTB alarm is off in Notification settings — this session will save without one.
+            <Text style={[typography.footnote, styles.disclaimer]}>
+              Your WBTB alarm is off in Notification settings. This session will save without one.
             </Text>
           ) : null}
           <Button
             label={`Set alarm for ${formatTime(wakeAt)}`}
             onPress={handleSetAlarm}
             loading={saving}
+            style={styles.primaryAction}
+          />
+        </>
+      }
+    >
+      <Arrive>
+        <View style={styles.section}>
+          <Text style={[typography.overline, styles.sectionLabel]}>Going to sleep at</Text>
+          <TimeStepper
+            value={sleepAt}
+            onChange={setSleepAt}
+            min={addMinutes(now, -SLEEP_TIME_PAST_GRACE_MINUTES)}
+            max={addMinutes(now, 23 * 60)}
           />
         </View>
-      </Panel>
+      </Arrive>
 
-      <PrePermissionModal
-        visible={alarmPermission.visible}
-        icon={Moon}
-        headline="WBTB only works if the alarm actually wakes you"
-        body="Your WBTB alarm needs to break through Do Not Disturb and sleep mode. Allow this so Nocturnal can wake you at exactly the right moment in your sleep cycle."
-        ctaLabel="Allow Alarm"
-        onAllow={alarmPermission.handleAllow}
-        onDismiss={alarmPermission.handleDismiss}
-      />
-    </ScreenContainer>
+      <Arrive delay={50}>
+        <View style={styles.section}>
+          <Text style={[typography.overline, styles.sectionLabel]}>Sleep before waking</Text>
+          <ChipGroup
+            variant="solid"
+            options={SLEEP_DURATION_OPTIONS}
+            value={sleepMinutes}
+            onChange={setSleepMinutes}
+            format={formatDuration}
+          />
+          <Text style={[typography.footnote, styles.caption]}>
+            6h is recommended. It lands late in your fourth sleep cycle, when REM periods run
+            longest and dreams are easiest to recall.
+          </Text>
+        </View>
+      </Arrive>
+
+      <Arrive delay={100}>
+        <View style={styles.section}>
+          <Text style={[typography.overline, styles.sectionLabel]}>Wake window</Text>
+          <ChipGroup
+            variant="solid"
+            options={WAKE_WINDOW_OPTIONS}
+            value={wakeWindowMinutes}
+            onChange={setWakeWindowMinutes}
+            format={(m) => `${m} min`}
+          />
+          <Text style={[typography.footnote, styles.caption]}>
+            Long enough to wake your mind, short enough to slip back into REM.
+          </Text>
+        </View>
+      </Arrive>
+
+      <Arrive delay={150}>
+        <View style={styles.section}>
+          <Text style={[typography.overline, styles.sectionLabel]}>Technique</Text>
+          <ChipGroup
+            variant="solid"
+            options={TECHNIQUE_OPTIONS}
+            value={technique}
+            onChange={setTechnique}
+            format={(t) => TECHNIQUE_LABELS[t]}
+          />
+          <Text style={[typography.footnote, styles.caption]}>{TECHNIQUE_DESCRIPTIONS[technique]}</Text>
+        </View>
+      </Arrive>
+
+      <Arrive delay={200}>
+        <Card style={styles.timeline}>
+          <TimelineRow label="Sleep" time={formatTime(sleepAt)} />
+          <TimelineRow label="Alarm" time={formatTime(wakeAt)} highlight />
+          <TimelineRow label="Back to sleep" time={`~${formatTime(backToSleepAt)}`} last />
+        </Card>
+      </Arrive>
+    </NightSetupLayout>
   );
 }
 
@@ -291,31 +283,6 @@ function TimelineRow({
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-    paddingHorizontal: spacing.screenPadding,
-  },
-  headerText: {
-    gap: spacing.xs / 2,
-  },
-  eyebrow: {
-    color: colors.text.tertiary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  title: {
-    color: colors.text.primary,
-  },
-  scroll: {
-    paddingHorizontal: spacing.screenPadding,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.lg,
-    gap: spacing.xl,
-  },
   section: {
     gap: spacing.sm,
   },
@@ -325,8 +292,13 @@ const styles = StyleSheet.create({
   caption: {
     color: colors.text.tertiary,
   },
+  disclaimer: {
+    color: colors.text.tertiary,
+  },
   timeline: {
     paddingVertical: spacing.sm,
+    borderRadius: radius.glass,
+    backgroundColor: colors.surface.glassSoft,
   },
   timelineRow: {
     flexDirection: 'row',
@@ -377,11 +349,9 @@ const styles = StyleSheet.create({
     color: colors.accent.primary,
     fontVariant: ['tabular-nums'],
   },
-  footer: {
-    gap: spacing.sm,
-    paddingHorizontal: spacing.screenPadding,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
+  // Full width inside the footer's 24px side padding; buttons otherwise hug their label.
+  primaryAction: {
+    alignSelf: 'stretch',
   },
   notice: {
     flexDirection: 'row',

@@ -10,6 +10,7 @@
     "backgroundColor": "#0A0E1A",
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.tawhid.nocturnal",
       "entitlements": {
         "com.apple.developer.usernotifications.time-sensitive": true
       }
@@ -24,7 +25,10 @@
       "permissions": [
         "android.permission.SCHEDULE_EXACT_ALARM",
         "android.permission.health.READ_SLEEP",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ],
       "predictiveBackGestureEnabled": false,
       "package": "com.tawhidrahman.nocturnal"
@@ -83,6 +87,12 @@
         }
       ],
       "expo-localization"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "a087d059-9398-4916-a1f9-33cd81430b0f"
+      }
+    },
+    "owner": "tawhidrahman"
   }
 }

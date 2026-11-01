@@ -1,4 +1,6 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
+import { PaywallSource } from '../lib/analytics';
+import { TechniqueId } from '../lib/techniqueLibrary';
 import { WbtbTechnique } from '../lib/wbtb';
 
 export type AuthStackParamList = {
@@ -36,6 +38,11 @@ export type AppStackParamList = {
   NotificationSettings: undefined;
   WbtbDefaults: undefined;
   LegalDocument: { doc: 'privacy' | 'terms' };
+  // `onboarding` is the hard paywall right after the quiz and leaves to Tabs when done; the
+  // other sources are opened from inside the app and just close back to where they came from.
+  Paywall: { source: PaywallSource };
+  TechniqueLibrary: undefined;
+  TechniqueDetail: { technique: TechniqueId };
 };
 
 declare global {

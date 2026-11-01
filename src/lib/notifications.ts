@@ -53,7 +53,6 @@ export async function requestAlarmPermission() {
       name: 'Wake Back To Bed alarm',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 400, 250, 400],
-      sound: 'default',
       bypassDnd: true,
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
       audioAttributes: { usage: Notifications.AndroidAudioUsage.ALARM },
@@ -77,7 +76,6 @@ export async function requestRealityCheckPermission() {
     await Notifications.setNotificationChannelAsync(REALITY_CHECK_CHANNEL_ID, {
       name: 'Reality check reminders',
       importance: Notifications.AndroidImportance.DEFAULT,
-      sound: 'default',
     });
   }
 
@@ -98,7 +96,6 @@ export async function requestMildPromptPermission() {
     await Notifications.setNotificationChannelAsync(MILD_PROMPT_CHANNEL_ID, {
       name: 'Pre-bed MILD prompt',
       importance: Notifications.AndroidImportance.DEFAULT,
-      sound: 'default',
     });
   }
 
@@ -125,7 +122,6 @@ function schedule(
     content: {
       title,
       body,
-      sound: 'default',
       data: { type, sessionId },
       interruptionLevel: 'timeSensitive',
     },
@@ -206,7 +202,6 @@ export async function scheduleRealityChecks(slots: RealityCheckSlot[]) {
         content: {
           title: slot.title,
           body: slot.body,
-          sound: 'default',
           data: { type: 'reality-check', slotIndex: slot.index, dreamSign: slot.dreamSign },
         },
         trigger: {
@@ -245,7 +240,6 @@ export async function scheduleMildPrompt(hour: number, minute: number) {
     content: {
       title: "Set tonight's intention",
       body: 'Your MILD prompt is ready. Takes ten seconds.',
-      sound: 'default',
       data: { type: 'mild-prompt' },
     },
     trigger: {

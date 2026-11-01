@@ -72,11 +72,9 @@ const TWINKLE_MAX = 15;
 const TWINKLE_FLOOR_RATIO = 0.35;
 // Gradient breathing is much slower than a twinkle (barely-perceptible color drift,
 // not a pulse) and only runs for `full` — subtle's tighter, smaller-panel gradient
-// doesn't have the room for the shift to read as anything but noise. Runs on the JS
-// thread (color interpolation isn't native-driver eligible) but is throttled to ~7fps
-// since a 24s cycle doesn't need 60fps to look smooth — see perf note in the PR.
+// doesn't have the room for the shift to read as anything but noise. Done as an opacity
+// crossfade between two gradients so it stays native-driven.
 const BREATH_HALF_MS = 12000;
-const BREATH_UPDATE_INTERVAL_MS = 150;
 const BREATH_DEEP_ALT = '#12103E';
 const BREATH_MID_ALT = '#241C63';
 
@@ -157,15 +155,6 @@ function hexToRgb(hex: string) {
 function hexToRgba(hex: string, alpha: number): string {
   const { r, g, b } = hexToRgb(hex);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
-function mixColor(from: string, to: string, t: number): string {
-  const a = hexToRgb(from);
-  const b = hexToRgb(to);
-  const r = Math.round(a.r + (b.r - a.r) * t);
-  const g = Math.round(a.g + (b.g - a.g) * t);
-  const bChannel = Math.round(a.b + (b.b - a.b) * t);
-  return `rgb(${r}, ${g}, ${bChannel})`;
 }
 
 function StarDots({ stars }: { stars: Star[] }) {
@@ -278,41 +267,26 @@ export function NightSky({ children, intensity = 'full', style, edgeFade = false
     };
   }, [stars, reducedMotion]);
 
-  // Gradient breathing (requirement 3): color interpolation isn't native-driver
-  // eligible, so this runs on the JS thread — throttled to ~7fps via a manual listener
-  // instead of driving a React re-render on every animation tick, since a 24s cycle is
-  // slow enough that the eye can't tell the difference from 60fps.
+  // Gradient breathing (requirement 3): a second, slightly shifted gradient sits over the
+  // base one and its opacity loops 0 -> 1 -> 0, which blends the two the way a color
+  // interpolation would but runs on the native thread.
   const [breathe] = useState(() => new Animated.Value(0));
-  const [breatheT, setBreatheT] = useState(0);
+  const breathing = intensity === 'full' && !reducedMotion;
   useEffect(() => {
-    if (reducedMotion || intensity !== 'full') return;
-    let lastUpdate = 0;
-    const id = breathe.addListener(({ value }) => {
-      const now = Date.now();
-      if (now - lastUpdate > BREATH_UPDATE_INTERVAL_MS) {
-        lastUpdate = now;
-        setBreatheT(value);
-      }
-    });
+    if (!breathing) {
+      breathe.setValue(0);
+      return;
+    }
+    const useNativeDriver = Platform.OS !== 'web';
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(breathe, { toValue: 1, duration: BREATH_HALF_MS, easing: EASE_AMBIENT, useNativeDriver: false }),
-        Animated.timing(breathe, { toValue: 0, duration: BREATH_HALF_MS, easing: EASE_AMBIENT, useNativeDriver: false }),
+        Animated.timing(breathe, { toValue: 1, duration: BREATH_HALF_MS, easing: EASE_AMBIENT, useNativeDriver }),
+        Animated.timing(breathe, { toValue: 0, duration: BREATH_HALF_MS, easing: EASE_AMBIENT, useNativeDriver }),
       ]),
     );
     loop.start();
-    return () => {
-      breathe.removeListener(id);
-      loop.stop();
-    };
-  }, [breathe, intensity, reducedMotion]);
-
-  // Derived rather than reset via setState in the effect above — 'subtle' and reduced
-  // motion should always compute from the base colors, not whatever breatheT was last
-  // set to before intensity/reducedMotion changed.
-  const breathing = intensity === 'full' && !reducedMotion;
-  const gradientDeep = breathing ? mixColor(colors.nightSky.deep, BREATH_DEEP_ALT, breatheT) : colors.nightSky.deep;
-  const gradientMid = breathing ? mixColor(colors.nightSky.mid, BREATH_MID_ALT, breatheT) : colors.nightSky.mid;
+    return () => loop.stop();
+  }, [breathe, breathing]);
 
   // Shooting star: read current size from a ref instead of closing over `size` directly
   // so the scheduling loop below doesn't restart (and lose its pending timer) every time
@@ -397,7 +371,12 @@ export function NightSky({ children, intensity = 'full', style, edgeFade = false
 
   return (
     <View style={[styles.container, style]} onLayout={handleLayout}>
-      <LinearGradient colors={[gradientDeep, gradientMid]} start={start} end={end} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={[colors.nightSky.deep, colors.nightSky.mid]} start={start} end={end} style={StyleSheet.absoluteFill} />
+      {breathing ? (
+        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: breathe }]}>
+          <LinearGradient colors={[BREATH_DEEP_ALT, BREATH_MID_ALT]} start={start} end={end} style={StyleSheet.absoluteFill} />
+        </Animated.View>
+      ) : null}
       {showDrift ? (
         <Animated.View
           pointerEvents="none"

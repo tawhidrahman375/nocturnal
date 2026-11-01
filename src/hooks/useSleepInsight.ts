@@ -50,7 +50,9 @@ async function resolveSleepInsight(dreams: DreamForCorrelation[]): Promise<Sleep
 
 // Drives the "Sleep and dreams" card. `dreamsLoading` holds the skeleton up until the
 // journal is known, so the correlation never runs against a half-loaded list.
-export function useSleepInsight(dreams: DreamForCorrelation[], dreamsLoading: boolean) {
+//
+// `enabled` is false for free users: no health data is read and nothing is requested.
+export function useSleepInsight(dreams: DreamForCorrelation[], dreamsLoading: boolean, enabled = true) {
   const [state, setState] = useState<SleepInsightState>({ kind: 'loading' });
   // Bumped to re-run the resolver (after connecting, or coming back from another app).
   const [reloadKey, setReloadKey] = useState(0);
@@ -65,7 +67,7 @@ export function useSleepInsight(dreams: DreamForCorrelation[], dreamsLoading: bo
   });
 
   useEffect(() => {
-    if (dreamsLoading) return;
+    if (!enabled || dreamsLoading) return;
     let ignore = false;
     (async () => {
       const next = await resolveSleepInsight(dreamsRef.current);
@@ -74,7 +76,7 @@ export function useSleepInsight(dreams: DreamForCorrelation[], dreamsLoading: bo
     return () => {
       ignore = true;
     };
-  }, [dreamsLoading, reloadKey]);
+  }, [enabled, dreamsLoading, reloadKey]);
 
   // Coming back from the system permission screen, Health, or the Play Store should pick up
   // whatever the user just changed, without leaving and re-entering Insights.
